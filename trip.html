@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-  <meta name="theme-color" content="#0ea5e9" />
+  <meta name="theme-color" content="#6F7E4F" />
   <title>여행 일정</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
@@ -11,7 +11,7 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <!-- Tailwind dynamic class hint -->
-  <div class="hidden from-sky-400 to-cyan-400 from-emerald-400 to-teal-500 from-fuchsia-400 to-purple-500 from-amber-400 to-orange-500 from-orange-400 to-rose-500 from-slate-300 to-sky-500 from-yellow-400 to-orange-600 from-indigo-500 to-slate-800"></div>
+  <div class="hidden from-[#5E8E92] to-[#7CA9AC] from-[#6F7E4F] to-[#8B9760] from-[#9F6748] to-[#B58258] from-[#B58A4A] to-[#C9A06A] from-[#C97F4D] to-[#D89366] from-[#8A9DA0] to-[#A8B8BA] from-[#C9A06A] to-[#D8B888] from-[#3D2F1F] to-[#5D4530]"></div>
   <style>
     html, body { font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Pretendard", system-ui, sans-serif; -webkit-tap-highlight-color: transparent; }
     .drag-handle { touch-action: none; cursor: grab; }
@@ -33,7 +33,7 @@
     .no-scrollbar { scrollbar-width: none; }
   </style>
 </head>
-<body class="bg-slate-100 min-h-screen pb-24">
+<body class="bg-[#F0E7D2] min-h-screen pb-24">
 
   <header id="appHeader" class="text-white px-5 pt-10 pb-5 shadow-lg bg-gradient-to-br from-sky-400 to-cyan-400">
     <div class="max-w-md mx-auto">
@@ -81,7 +81,7 @@
 
   <main class="max-w-md mx-auto px-4 py-4">
     <div class="mb-4">
-      <button id="addItemBtn" class="w-full py-3.5 rounded-2xl bg-sky-500 text-white font-bold active:bg-sky-600 shadow-md">+ 일정 추가하기</button>
+      <button id="addItemBtn" class="w-full py-3.5 rounded-2xl bg-[#C97F4D] text-white font-bold active:bg-[#B36E3D] shadow-md">+ 일정 추가하기</button>
       <a id="routeLink" href="#" class="hidden mt-2 w-full block py-2.5 rounded-2xl bg-white border border-slate-200 text-slate-700 font-medium text-sm text-center active:bg-slate-50">🗺 동선 한눈에 보기</a>
     </div>
     <div id="recoSection" class="hidden mb-4">
@@ -337,14 +337,14 @@
     { id: 'Etc',       emoji: '✨', label: '기타' },
   ];
   const COVER_THEMES = [
-    { id: 'ocean',  emoji: '🏝️', gradient: 'from-sky-400 to-cyan-400' },
-    { id: 'forest', emoji: '🏔️', gradient: 'from-emerald-400 to-teal-500' },
-    { id: 'city',   emoji: '🌆', gradient: 'from-fuchsia-400 to-purple-500' },
-    { id: 'temple', emoji: '⛩️', gradient: 'from-amber-400 to-orange-500' },
-    { id: 'sunset', emoji: '🌅', gradient: 'from-orange-400 to-rose-500' },
-    { id: 'snow',   emoji: '❄️', gradient: 'from-slate-300 to-sky-500' },
-    { id: 'desert', emoji: '🏜️', gradient: 'from-yellow-400 to-orange-600' },
-    { id: 'night',  emoji: '🌃', gradient: 'from-indigo-500 to-slate-800' },
+    { id: 'ocean',  emoji: '🏝️', gradient: 'from-[#5E8E92] to-[#7CA9AC]' }, // muted teal
+    { id: 'forest', emoji: '🏔️', gradient: 'from-[#6F7E4F] to-[#8B9760]' }, // olive
+    { id: 'city',   emoji: '🌆', gradient: 'from-[#9F6748] to-[#B58258]' }, // muted terra
+    { id: 'temple', emoji: '⛩️', gradient: 'from-[#B58A4A] to-[#C9A06A]' }, // amber
+    { id: 'sunset', emoji: '🌅', gradient: 'from-[#C97F4D] to-[#D89366]' }, // Brik terra
+    { id: 'snow',   emoji: '❄️', gradient: 'from-[#8A9DA0] to-[#A8B8BA]' }, // muted slate
+    { id: 'desert', emoji: '🏜️', gradient: 'from-[#C9A06A] to-[#D8B888]' }, // tan
+    { id: 'night',  emoji: '🌃', gradient: 'from-[#3D2F1F] to-[#5D4530]' }, // espresso
   ];
   const COMPANION_TYPES = [
     { id: 'family',  emoji: '👨‍👩‍👧', label: '가족' },
@@ -655,7 +655,7 @@
     document.getElementById('appHeader').className = `text-white px-5 pt-10 pb-5 shadow-lg bg-gradient-to-br ${theme.gradient}`;
     document.getElementById('coverEmojiBtn').textContent = theme.emoji;
     document.querySelector('meta[name="theme-color"]').setAttribute('content',
-      ({ ocean:'#0ea5e9', forest:'#10b981', city:'#a855f7', temple:'#f59e0b', sunset:'#fb7185', snow:'#7dd3fc', desert:'#ea580c', night:'#4f46e5' })[theme.id] || '#0ea5e9'
+      ({ ocean:'#5E8E92', forest:'#6F7E4F', city:'#9F6748', temple:'#B58A4A', sunset:'#C97F4D', snow:'#8A9DA0', desert:'#C9A06A', night:'#3D2F1F' })[theme.id] || '#6F7E4F'
     );
   }
 
@@ -952,16 +952,20 @@
   function renderInputModeToggle() {
     const manualBtn = document.getElementById('modeManualBtn');
     const mapBtn = document.getElementById('modeMapBtn');
+    const titleEl = document.getElementById('f_title');
+    const mapSec = document.getElementById('mapSection');
     const sel = 'py-2.5 rounded-xl text-sm font-medium bg-sky-100 text-sky-700 ring-2 ring-sky-400';
     const unsel = 'py-2.5 rounded-xl text-sm font-medium bg-slate-100 text-slate-500 active:bg-slate-200';
     if (tempInputMode === 'manual') {
       manualBtn.className = sel;
       mapBtn.className = unsel;
-      document.getElementById('mapSection').classList.add('hidden');
+      titleEl.classList.remove('hidden');
+      mapSec.classList.add('hidden');
     } else {
       manualBtn.className = unsel;
       mapBtn.className = sel;
-      document.getElementById('mapSection').classList.remove('hidden');
+      titleEl.classList.add('hidden');
+      mapSec.classList.remove('hidden');
     }
   }
 

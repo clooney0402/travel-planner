@@ -3,12 +3,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-  <meta name="theme-color" content="#0ea5e9" />
-  <title>내 여행</title>
+  <meta name="theme-color" content="#6F7E4F" />
+  <title>Brik · 여행 기록</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/lz-string@1.5.0/libs/lz-string.min.js"></script>
   <!-- Tailwind hint (dynamic gradient classes) -->
-  <div class="hidden from-sky-400 to-cyan-400 from-emerald-400 to-teal-500 from-fuchsia-400 to-purple-500 from-amber-400 to-orange-500 from-orange-400 to-rose-500 from-slate-300 to-sky-500 from-yellow-400 to-orange-600 from-indigo-500 to-slate-800"></div>
+  <div class="hidden from-[#5E8E92] to-[#7CA9AC] from-[#6F7E4F] to-[#8B9760] from-[#9F6748] to-[#B58258] from-[#B58A4A] to-[#C9A06A] from-[#C97F4D] to-[#D89366] from-[#8A9DA0] to-[#A8B8BA] from-[#C9A06A] to-[#D8B888] from-[#3D2F1F] to-[#5D4530]"></div>
   <style>
     html, body { font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Pretendard", system-ui, sans-serif; -webkit-tap-highlight-color: transparent; }
     .no-scrollbar::-webkit-scrollbar { display: none; }
@@ -19,21 +19,25 @@
     @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
   </style>
 </head>
-<body class="bg-slate-100 min-h-screen pb-28">
+<body class="bg-[#F0E7D2] min-h-screen pb-28">
 
-  <header class="bg-gradient-to-br from-sky-500 via-sky-400 to-cyan-300 text-white px-5 pt-12 pb-5 shadow-lg">
+  <header class="bg-gradient-to-b from-[#E5D8B5] to-[#DCCFA9] text-[#2D1F0F] px-5 pt-12 pb-7 border-b border-[#C9B98A] shadow-[0_3px_8px_rgba(45,31,15,0.08)]">
     <div class="max-w-md mx-auto">
-      <div class="text-sm text-white/85">안녕하세요 👋</div>
-      <h1 class="text-3xl font-extrabold mt-1">내 여행 ✈️</h1>
-
-      <div id="overallStats" class="mt-3 text-sm text-white/90">함께 떠나볼까요? ✨</div>
+      <div class="flex items-end gap-1.5">
+        <span class="w-11 h-11 rounded-lg bg-[#6F7E4F] text-white text-2xl font-extrabold flex items-center justify-center shadow-sm">B</span>
+        <span class="w-11 h-11 rounded-lg bg-[#C9BC8C] text-[#2D1F0F] text-2xl font-extrabold flex items-center justify-center shadow-sm ring-1 ring-black/5">r</span>
+        <span class="w-11 h-11 rounded-lg bg-[#C97F4D] text-white text-2xl font-extrabold flex items-center justify-center shadow-sm">i</span>
+        <span class="w-11 h-11 rounded-lg bg-[#2D1F0F] text-white text-2xl font-extrabold flex items-center justify-center shadow-sm">k</span>
+      </div>
+      <p class="mt-3 text-sm text-[#5D4E2F] leading-relaxed">차곡차곡 쌓는 우리의 여행 기록</p>
+      <div id="overallStats" class="mt-2 text-xs text-[#7D6F4F]">함께 떠나볼까요? ✨</div>
     </div>
   </header>
 
   <nav class="max-w-md mx-auto px-4 -mt-3 mb-1 relative z-[1]">
-    <div class="bg-white rounded-2xl shadow flex p-1 gap-1">
-      <button class="flex-1 py-2 rounded-xl bg-sky-500 text-white font-medium text-sm" aria-current="page">✈️ 여행 <span id="navTripCount" class="opacity-80"></span></button>
-      <a href="favorites.html" class="flex-1 py-2 rounded-xl text-slate-600 font-medium text-sm text-center">❤️ 즐겨찾기 <span id="navFavCount" class="text-slate-400"></span></a>
+    <div class="bg-white rounded-2xl shadow border border-[#E8DCC1] flex p-1 gap-1">
+      <button class="flex-1 py-2 rounded-xl bg-[#6F7E4F] text-white font-medium text-sm" aria-current="page">✈️ 여행 <span id="navTripCount" class="opacity-80"></span></button>
+      <a href="favorites.html" class="flex-1 py-2 rounded-xl text-[#7D6F4F] font-medium text-sm text-center">❤️ 즐겨찾기 <span id="navFavCount" class="text-[#A89668]"></span></a>
     </div>
   </nav>
 
@@ -47,17 +51,17 @@
     <!-- Empty state -->
     <div id="emptyAll" class="hidden text-center py-16">
       <div class="text-6xl">🧳</div>
-      <p class="mt-4 text-slate-500">아직 떠난 여행이 없네요</p>
-      <p class="text-slate-400 text-sm">+ 버튼으로 첫 여행을 만들어볼까요?</p>
+      <p class="mt-4 text-[#7D6F4F]">아직 떠난 여행이 없네요</p>
+      <p class="text-[#A89668] text-sm">+ 버튼으로 첫 여행을 만들어볼까요?</p>
     </div>
     <div id="emptyFilter" class="hidden text-center py-12">
-      <p class="text-slate-500">이 해엔 떠난 여행이 없네요</p>
+      <p class="text-[#7D6F4F]">이 해엔 떠난 여행이 없네요</p>
     </div>
   </main>
 
   <!-- FAB -->
   <button id="addTripFab"
-          class="fixed bottom-6 z-10 w-14 h-14 rounded-full bg-sky-500 text-white text-3xl shadow-2xl active:scale-95 flex items-center justify-center"
+          class="fixed bottom-6 z-10 w-14 h-14 rounded-full bg-[#C97F4D] text-white text-3xl shadow-2xl active:scale-95 flex items-center justify-center"
           style="right: max(1.5rem, calc(50% - 13rem));"
           title="새 여행">+</button>
 
@@ -158,21 +162,21 @@
         </div>
         <p id="nf_modeHint" class="hidden mt-2 text-[11px] text-slate-500 text-center"></p>
       </div>
-      <button type="submit" class="w-full py-3 rounded-xl bg-sky-500 text-white font-bold active:bg-sky-600">여행 떠나기 ✨</button>
+      <button type="submit" class="w-full py-3 rounded-xl bg-[#C97F4D] text-white font-bold active:bg-[#B36E3D]">여행 떠나기 ✨</button>
     </form>
   </div>
 
   <script>
   const STORAGE_KEY = 'travel-planner-v2';
   const COVER_THEMES = [
-    { id: 'ocean',  emoji: '🏝️', gradient: 'from-sky-400 to-cyan-400' },
-    { id: 'forest', emoji: '🏔️', gradient: 'from-emerald-400 to-teal-500' },
-    { id: 'city',   emoji: '🌆', gradient: 'from-fuchsia-400 to-purple-500' },
-    { id: 'temple', emoji: '⛩️', gradient: 'from-amber-400 to-orange-500' },
-    { id: 'sunset', emoji: '🌅', gradient: 'from-orange-400 to-rose-500' },
-    { id: 'snow',   emoji: '❄️', gradient: 'from-slate-300 to-sky-500' },
-    { id: 'desert', emoji: '🏜️', gradient: 'from-yellow-400 to-orange-600' },
-    { id: 'night',  emoji: '🌃', gradient: 'from-indigo-500 to-slate-800' },
+    { id: 'ocean',  emoji: '🏝️', gradient: 'from-[#5E8E92] to-[#7CA9AC]' },
+    { id: 'forest', emoji: '🏔️', gradient: 'from-[#6F7E4F] to-[#8B9760]' },
+    { id: 'city',   emoji: '🌆', gradient: 'from-[#9F6748] to-[#B58258]' },
+    { id: 'temple', emoji: '⛩️', gradient: 'from-[#B58A4A] to-[#C9A06A]' },
+    { id: 'sunset', emoji: '🌅', gradient: 'from-[#C97F4D] to-[#D89366]' },
+    { id: 'snow',   emoji: '❄️', gradient: 'from-[#8A9DA0] to-[#A8B8BA]' },
+    { id: 'desert', emoji: '🏜️', gradient: 'from-[#C9A06A] to-[#D8B888]' },
+    { id: 'night',  emoji: '🌃', gradient: 'from-[#3D2F1F] to-[#5D4530]' },
   ];
   const COMPANION_TYPES = [
     { id: 'family',  emoji: '👨‍👩‍👧', label: '가족' },
@@ -335,7 +339,7 @@
   function makeYearPill(value, label) {
     const b = document.createElement('button');
     const active = value === selectedYear;
-    b.className = `px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap ${active ? 'bg-sky-500 text-white shadow' : 'bg-white text-slate-600 border border-slate-200'}`;
+    b.className = `px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap ${active ? 'bg-[#6F7E4F] text-white shadow' : 'bg-white text-[#7D6F4F] border border-[#E8DCC1]'}`;
     b.textContent = label;
     b.onclick = () => { selectedYear = value; render(); };
     return b;

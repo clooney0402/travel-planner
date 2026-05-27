@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-  <meta name="theme-color" content="#f43f5e" />
+  <meta name="theme-color" content="#C97F4D" />
   <title>내 즐겨찾기</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
@@ -12,9 +12,9 @@
     .no-scrollbar { scrollbar-width: none; }
   </style>
 </head>
-<body class="bg-slate-100 min-h-screen pb-12">
+<body class="bg-[#F0E7D2] min-h-screen pb-12">
 
-  <header class="bg-gradient-to-br from-rose-500 via-rose-400 to-pink-400 text-white px-5 pt-12 pb-5 shadow-lg">
+  <header class="bg-gradient-to-br from-[#C97F4D] via-[#CE8956] to-[#D89366] text-white px-5 pt-12 pb-5 shadow-lg">
     <div class="max-w-md mx-auto">
       <a href="index.html" class="inline-flex items-center gap-1 text-sm text-white/95 active:opacity-70">
         <span class="text-lg leading-none">‹</span><span>홈</span>
@@ -25,9 +25,9 @@
   </header>
 
   <nav class="max-w-md mx-auto px-4 -mt-3 mb-1 relative z-[1]">
-    <div class="bg-white rounded-2xl shadow flex p-1 gap-1">
-      <a href="index.html" class="flex-1 py-2 rounded-xl text-slate-600 font-medium text-sm text-center">✈️ 여행 <span id="navTripCount" class="text-slate-400"></span></a>
-      <button class="flex-1 py-2 rounded-xl bg-rose-500 text-white font-medium text-sm" aria-current="page">❤️ 즐겨찾기 <span id="navFavCount" class="opacity-80"></span></button>
+    <div class="bg-white rounded-2xl shadow border border-[#E8DCC1] flex p-1 gap-1">
+      <a href="index.html" class="flex-1 py-2 rounded-xl text-[#7D6F4F] font-medium text-sm text-center">✈️ 여행 <span id="navTripCount" class="text-[#A89668]"></span></a>
+      <button class="flex-1 py-2 rounded-xl bg-[#C97F4D] text-white font-medium text-sm" aria-current="page">❤️ 즐겨찾기 <span id="navFavCount" class="opacity-80"></span></button>
     </div>
   </nav>
 
@@ -169,9 +169,9 @@
     const active = value === selectedCategory;
     const baseColor = value === 'pet'
       ? (active ? 'bg-emerald-500 text-white shadow' : 'bg-white text-emerald-700 border border-emerald-200')
-      : (active ? 'bg-rose-500 text-white shadow' : 'bg-white text-slate-600 border border-slate-200');
+      : (active ? 'bg-[#C97F4D] text-white shadow' : 'bg-white text-[#7D6F4F] border border-[#E8DCC1]');
     b.className = `px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap ${baseColor}`;
-    b.innerHTML = `${escapeHtml(label)} <span class="${active ? 'text-white/80' : (value === 'pet' ? 'text-emerald-400' : 'text-slate-400')}">${count}</span>`;
+    b.innerHTML = `${escapeHtml(label)} <span class="${active ? 'text-white/80' : (value === 'pet' ? 'text-emerald-400' : 'text-[#A89668]')}">${count}</span>`;
     b.onclick = () => { selectedCategory = value; render(); };
     return b;
   }
