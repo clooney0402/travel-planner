@@ -1443,8 +1443,8 @@
           const finalAddr = addr || d.place_name;
           map.setView([lat, lng], 16);
           placePin(lat, lng, false);
-          pendingLocation = { lat, lng, address: finalAddr };
-          document.getElementById('mapAddress').textContent = '📍 ' + finalAddr;
+          pendingLocation = { lat, lng, address: finalAddr, placeName: d.place_name };
+          document.getElementById('mapAddress').textContent = '📍 ' + (d.place_name ? `${d.place_name} · ${finalAddr}` : finalAddr);
           document.getElementById('mapConfirmBtn').disabled = false;
           list.classList.add('hidden');
         };
@@ -1464,10 +1464,11 @@
     if (!pendingLocation) return;
     tempLocation = { ...pendingLocation };
     updateLocationUI();
-    // Auto-fill the title from map result when empty
+    // Auto-fill the title from map result when empty — 검색 결과는 장소명, 핀만 찍은 경우는 주소
     const titleEl = document.getElementById('f_title');
-    if (titleEl && !titleEl.value.trim() && pendingLocation.address) {
-      titleEl.value = pendingLocation.address.split(',')[0].trim();
+    if (titleEl && !titleEl.value.trim()) {
+      const seed = pendingLocation.placeName || pendingLocation.address || '';
+      titleEl.value = seed.split(',')[0].trim();
     }
     closeMap();
   }
