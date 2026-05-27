@@ -123,23 +123,23 @@
 
       <div>
         <label class="text-xs text-slate-500 font-medium">어디로 가요?</label>
-        <input id="f_title" type="text" placeholder="예: 성산일출봉" class="mt-1 w-full px-4 py-3 bg-slate-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-400" />
+        <div class="mt-2 grid grid-cols-2 gap-2">
+          <button type="button" id="modeManualBtn" class="py-2.5 rounded-xl text-sm font-medium">✏️ 직접 입력</button>
+          <button type="button" id="modeMapBtn" class="py-2.5 rounded-xl text-sm font-medium">🗺 지도에서 찾기</button>
+        </div>
+        <input id="f_title" type="text" placeholder="예: 성산일출봉, 친구 집" class="mt-2 w-full px-4 py-3 bg-slate-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-400" />
+        <div id="mapSection" class="hidden mt-2 bg-slate-100 rounded-xl p-3">
+          <div id="f_locText" class="text-sm text-slate-500">아직 위치가 없어요</div>
+          <div class="mt-2 flex gap-2">
+            <button type="button" id="openMapBtn" class="flex-1 py-2 rounded-lg bg-sky-500 text-white text-sm font-medium active:bg-sky-600">🗺 지도에서 찾기</button>
+            <button type="button" id="clearLocBtn" class="hidden py-2 px-3 rounded-lg bg-white border border-slate-200 text-slate-500 text-sm active:bg-slate-50">지우기</button>
+          </div>
+        </div>
       </div>
 
       <div>
         <label class="text-xs text-slate-500 font-medium">몇 시쯤? (선택)</label>
         <input id="f_time" type="time" class="mt-1 w-full px-4 py-3 bg-slate-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-400" />
-      </div>
-
-      <div>
-        <label class="text-xs text-slate-500 font-medium">위치 찍기</label>
-        <div class="mt-1 bg-slate-100 rounded-xl p-3">
-          <div id="f_locText" class="text-sm text-slate-500">아직 위치가 없어요</div>
-          <div class="mt-2 flex gap-2">
-            <button type="button" id="openMapBtn" class="flex-1 py-2 rounded-lg bg-sky-500 text-white text-sm font-medium active:bg-sky-600">🗺 지도에서 찍어보기</button>
-            <button type="button" id="clearLocBtn" class="hidden py-2 px-3 rounded-lg bg-white border border-slate-200 text-slate-500 text-sm active:bg-slate-50">지우기</button>
-          </div>
-        </div>
       </div>
 
       <div>
@@ -644,6 +644,7 @@
   let tempPetFriendly = false;
   let tempReceipts = [];
   let originalReceipts = [];
+  let tempInputMode = 'manual'; // 'manual' | 'map'
   let selectedDayId = null;
   let contextDayId = null;
   const PENDING_NEW_DAY = '__new__';
@@ -948,6 +949,22 @@
     return recos.length;
   }
 
+  function renderInputModeToggle() {
+    const manualBtn = document.getElementById('modeManualBtn');
+    const mapBtn = document.getElementById('modeMapBtn');
+    const sel = 'py-2.5 rounded-xl text-sm font-medium bg-sky-100 text-sky-700 ring-2 ring-sky-400';
+    const unsel = 'py-2.5 rounded-xl text-sm font-medium bg-slate-100 text-slate-500 active:bg-slate-200';
+    if (tempInputMode === 'manual') {
+      manualBtn.className = sel;
+      mapBtn.className = unsel;
+      document.getElementById('mapSection').classList.add('hidden');
+    } else {
+      manualBtn.className = unsel;
+      mapBtn.className = sel;
+      document.getElementById('mapSection').classList.remove('hidden');
+    }
+  }
+
   function updateLocationUI() {
     const txt = document.getElementById('f_locText');
     const clear = document.getElementById('clearLocBtn');
@@ -1019,7 +1036,9 @@
     tempPetFriendly = !!item?.petFriendly;
     originalReceipts = [...(item?.receipts || [])];
     tempReceipts = [...originalReceipts];
+    tempInputMode = item?.location ? 'map' : 'manual';
     updateLocationUI();
+    renderInputModeToggle();
     renderTransportPicker();
     renderPetToggle();
     renderReceipts();
@@ -1052,7 +1071,7 @@
         desc:              document.getElementById('f_desc').value.trim(),
         transportMode:     tempTransportMode,
         transportDetail:   document.getElementById('f_transportDetail').value.trim(),
-        location:          tempLocation,
+        location:          tempInputMode === 'map' ? tempLocation : null,
         costEntry:         Number(document.getElementById('f_costEntry').value) || 0,
         costFood:          Number(document.getElementById('f_costFood').value) || 0,
         costTransport:     Number(document.getElementById('f_costTransport').value) || 0,
@@ -1385,6 +1404,11 @@
     if (!pendingLocation) return;
     tempLocation = { ...pendingLocation };
     updateLocationUI();
+    // Auto-fill the title from map result when empty
+    const titleEl = document.getElementById('f_title');
+    if (titleEl && !titleEl.value.trim() && pendingLocation.address) {
+      titleEl.value = pendingLocation.address.split(',')[0].trim();
+    }
     closeMap();
   }
 
@@ -1495,6 +1519,8 @@
 
   document.getElementById('openMapBtn').onclick = openMap;
   document.getElementById('clearLocBtn').onclick = () => { tempLocation = null; updateLocationUI(); };
+  document.getElementById('modeManualBtn').onclick = () => { tempInputMode = 'manual'; renderInputModeToggle(); };
+  document.getElementById('modeMapBtn').onclick = () => { tempInputMode = 'map'; renderInputModeToggle(); };
   document.getElementById('mapBackBtn').onclick = closeMap;
   document.getElementById('mapConfirmBtn').onclick = confirmMap;
   document.getElementById('mapSearchBtn').onclick = doSearch;
