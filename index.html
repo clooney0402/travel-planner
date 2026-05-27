@@ -61,9 +61,12 @@
 
   <!-- FAB -->
   <button id="addTripFab"
-          class="fixed bottom-6 z-10 w-14 h-14 rounded-full bg-[#C97F4D] text-white text-3xl shadow-2xl active:scale-95 flex items-center justify-center"
+          class="fixed bottom-6 z-10 pl-4 pr-5 py-3 rounded-full bg-[#2D1F0F] text-white shadow-2xl active:scale-95 flex items-center gap-2 font-medium"
           style="right: max(1.5rem, calc(50% - 13rem));"
-          title="새 여행">+</button>
+          title="새 여행">
+    <span class="text-xl leading-none">+</span>
+    <span class="text-sm">새 여행</span>
+  </button>
 
   <!-- Import preview sheet -->
   <div id="importBackdrop" class="hidden fixed inset-0 bg-black/40 z-20 backdrop-enter"></div>
@@ -112,23 +115,23 @@
         <div id="newThemePicker" class="mt-2 grid grid-cols-4 gap-2"></div>
       </div>
       <div>
-        <label class="text-xs text-slate-500 font-medium">여행 이름</label>
-        <input id="nf_title" type="text" placeholder="예: 도쿄 출장" class="mt-1 w-full px-4 py-3 bg-slate-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-400" />
+        <label class="text-xs text-[#5D4E2F] font-medium">여행 이름</label>
+        <input id="nf_title" type="text" placeholder="예: 도쿄 출장" class="mt-1.5 w-full px-4 py-3 bg-[#FAF5E8] border border-[#D6C9A5] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#C97F4D] focus:border-transparent text-[#2D1F0F]" />
       </div>
       <div class="grid grid-cols-2 gap-2">
         <div>
-          <label class="text-xs text-slate-500 font-medium">언제 떠나요?</label>
-          <input id="nf_start" type="date" class="mt-1 w-full px-4 py-3 bg-slate-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-400" />
+          <label class="text-xs text-[#5D4E2F] font-medium">언제 떠나요?</label>
+          <input id="nf_start" type="date" class="mt-1.5 w-full px-4 py-3 bg-[#FAF5E8] border border-[#D6C9A5] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#C97F4D] focus:border-transparent text-[#2D1F0F]" />
         </div>
         <div>
-          <label class="text-xs text-slate-500 font-medium">언제 돌아와요?</label>
-          <input id="nf_end" type="date" class="mt-1 w-full px-4 py-3 bg-slate-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-400" />
+          <label class="text-xs text-[#5D4E2F] font-medium">언제 돌아와요?</label>
+          <input id="nf_end" type="date" class="mt-1.5 w-full px-4 py-3 bg-[#FAF5E8] border border-[#D6C9A5] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#C97F4D] focus:border-transparent text-[#2D1F0F]" />
         </div>
       </div>
       <div>
-        <label class="text-xs text-slate-500 font-medium">어디로 가나요?</label>
+        <label class="text-xs text-[#5D4E2F] font-medium">어디로 가나요?</label>
         <div id="newScopePicker" class="mt-2 grid grid-cols-2 gap-2"></div>
-        <input id="nf_region" type="text" placeholder="예: 제주도, 도쿄, 발리" class="mt-2 w-full px-4 py-3 bg-slate-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-400" />
+        <input id="nf_region" type="text" placeholder="예: 제주도, 도쿄, 발리" class="mt-2 w-full px-4 py-3 bg-[#FAF5E8] border border-[#D6C9A5] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#C97F4D] focus:border-transparent text-[#2D1F0F]" />
       </div>
       <div>
         <label class="text-xs text-slate-500 font-medium">누구랑 가나요?</label>
@@ -141,11 +144,11 @@
         </button>
       </div>
       <div>
-        <label class="text-xs text-slate-500 font-medium">총 몇 명이에요? (본인 포함)</label>
-        <div class="mt-1 flex items-center gap-2">
-          <button type="button" id="nf_count_dec" class="w-12 h-12 rounded-xl bg-slate-100 text-2xl font-bold text-slate-600 active:bg-slate-200 shrink-0">−</button>
-          <input id="nf_count" type="number" inputmode="numeric" min="1" value="1" class="flex-1 min-w-0 px-4 py-3 bg-slate-100 rounded-xl text-center text-lg font-bold focus:outline-none focus:ring-2 focus:ring-sky-400" />
-          <button type="button" id="nf_count_inc" class="w-12 h-12 rounded-xl bg-slate-100 text-2xl font-bold text-slate-600 active:bg-slate-200 shrink-0">+</button>
+        <label class="text-xs text-[#5D4E2F] font-medium">총 몇 명이에요? (본인 포함)</label>
+        <div class="mt-1.5 flex items-center gap-2">
+          <button type="button" id="nf_count_dec" class="w-12 h-12 rounded-xl bg-[#FAF5E8] border border-[#D6C9A5] text-2xl font-bold text-[#5D4E2F] active:bg-[#E5D8B5] shrink-0">−</button>
+          <input id="nf_count" type="number" inputmode="numeric" min="1" value="1" class="flex-1 min-w-0 px-4 py-3 bg-[#FAF5E8] border border-[#D6C9A5] rounded-xl text-center text-lg font-bold text-[#2D1F0F] focus:outline-none focus:ring-2 focus:ring-[#C97F4D] focus:border-transparent" />
+          <button type="button" id="nf_count_inc" class="w-12 h-12 rounded-xl bg-[#FAF5E8] border border-[#D6C9A5] text-2xl font-bold text-[#5D4E2F] active:bg-[#E5D8B5] shrink-0">+</button>
         </div>
       </div>
       <div>
@@ -162,7 +165,7 @@
         </div>
         <p id="nf_modeHint" class="hidden mt-2 text-[11px] text-slate-500 text-center"></p>
       </div>
-      <button type="submit" class="w-full py-3 rounded-xl bg-[#C97F4D] text-white font-bold active:bg-[#B36E3D]">여행 떠나기 ✨</button>
+      <button type="submit" class="w-full py-3 rounded-xl bg-[#A05D30] text-white font-bold active:bg-[#8C4F26]">여행 떠나기 ✨</button>
     </form>
   </div>
 

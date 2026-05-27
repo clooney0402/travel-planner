@@ -35,15 +35,15 @@
 </head>
 <body class="bg-[#F0E7D2] min-h-screen pb-24">
 
-  <header id="appHeader" class="text-white px-5 pt-10 pb-5 shadow-lg bg-gradient-to-br from-sky-400 to-cyan-400">
+  <header id="appHeader" class="text-white px-5 pt-10 pb-5 shadow-lg bg-gradient-to-br from-[#6F7E4F] to-[#8B9760]">
     <div class="max-w-md mx-auto">
       <div class="flex items-center justify-between">
         <a href="index.html" class="flex items-center gap-1 text-sm text-white/95 active:opacity-70">
           <span class="text-lg leading-none">‹</span><span>내 여행으로</span>
         </a>
         <div class="flex items-center gap-2">
-          <button id="shareBtn" class="text-white/95 active:opacity-70 text-lg leading-none p-1" title="여행 공유">📤</button>
-          <button id="settingsBtn" class="text-white/95 active:opacity-70 text-lg leading-none p-1" title="여행 설정">⚙</button>
+          <button id="shareBtn" class="text-white/95 active:opacity-70 text-sm font-medium px-2.5 py-1 rounded-lg bg-white/15 backdrop-blur active:bg-white/25" title="여행 공유">📤 공유하기</button>
+          <button id="settingsBtn" class="text-white/95 active:opacity-70 text-lg leading-none p-1.5" title="여행 설정">⚙</button>
         </div>
       </div>
       <div class="mt-3 flex items-center gap-3">
@@ -81,7 +81,7 @@
 
   <main class="max-w-md mx-auto px-4 py-4">
     <div class="mb-4">
-      <button id="addItemBtn" class="w-full py-3.5 rounded-2xl bg-[#C97F4D] text-white font-bold active:bg-[#B36E3D] shadow-md">+ 일정 추가하기</button>
+      <button id="addItemBtn" class="w-full py-3.5 rounded-2xl bg-[#2D1F0F] text-white font-bold active:bg-[#1A0F08] shadow-md">+ 일정 추가하기</button>
       <a id="routeLink" href="#" class="hidden mt-2 w-full block py-2.5 rounded-2xl bg-white border border-slate-200 text-slate-700 font-medium text-sm text-center active:bg-slate-50">🗺 동선 한눈에 보기</a>
     </div>
     <div id="recoSection" class="hidden mb-4">
@@ -127,11 +127,11 @@
           <button type="button" id="modeManualBtn" class="py-2.5 rounded-xl text-sm font-medium">✏️ 직접 입력</button>
           <button type="button" id="modeMapBtn" class="py-2.5 rounded-xl text-sm font-medium">🗺 지도에서 찾기</button>
         </div>
-        <input id="f_title" type="text" placeholder="예: 성산일출봉, 친구 집" class="mt-2 w-full px-4 py-3 bg-slate-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-400" />
-        <div id="mapSection" class="hidden mt-2 bg-slate-100 rounded-xl p-3">
+        <input id="f_title" type="text" placeholder="예: 성산일출봉, 친구 집" class="mt-2 w-full px-4 py-3 bg-[#FAF5E8] border border-[#D6C9A5] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#C97F4D] focus:border-transparent" />
+        <div id="mapSection" class="hidden mt-2 bg-[#FAF5E8] border border-[#D6C9A5] rounded-xl p-3">
           <div id="f_locText" class="text-sm text-slate-500">아직 위치가 없어요</div>
           <div class="mt-2 flex gap-2">
-            <button type="button" id="openMapBtn" class="flex-1 py-2 rounded-lg bg-sky-500 text-white text-sm font-medium active:bg-sky-600">🗺 지도에서 찾기</button>
+            <button type="button" id="openMapBtn" class="flex-1 py-2 rounded-lg bg-[#A05D30] text-white text-sm font-medium active:bg-[#8C4F26]">🗺 지도에서 찾기</button>
             <button type="button" id="clearLocBtn" class="hidden py-2 px-3 rounded-lg bg-white border border-slate-200 text-slate-500 text-sm active:bg-slate-50">지우기</button>
           </div>
         </div>
@@ -139,38 +139,38 @@
 
       <div>
         <label class="text-xs text-slate-500 font-medium">몇 시쯤? (선택)</label>
-        <input id="f_time" type="time" class="mt-1 w-full px-4 py-3 bg-slate-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-400" />
+        <input id="f_time" type="time" class="mt-1 w-full px-4 py-3 bg-[#FAF5E8] border border-[#D6C9A5] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#C97F4D] focus:border-transparent" />
       </div>
 
       <div>
         <label class="text-xs text-slate-500 font-medium">여기서 뭐 할 거예요?</label>
-        <textarea id="f_desc" rows="2" placeholder="예: 일출 보기, 인증샷" class="mt-1 w-full px-4 py-3 bg-slate-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-400 resize-none"></textarea>
+        <textarea id="f_desc" rows="2" placeholder="예: 일출 보기, 인증샷" class="mt-1 w-full px-4 py-3 bg-[#FAF5E8] border border-[#D6C9A5] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#C97F4D] focus:border-transparent resize-none"></textarea>
       </div>
 
       <div>
         <label class="text-xs text-slate-500 font-medium">어떻게 이동해요?</label>
         <div id="transportPicker" class="mt-2 grid grid-cols-4 gap-2"></div>
-        <input id="f_transportDetail" type="text" placeholder="예: 30분 / 환승 1회" class="mt-2 w-full px-4 py-3 bg-slate-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-400" />
+        <input id="f_transportDetail" type="text" placeholder="예: 30분 / 환승 1회" class="mt-2 w-full px-4 py-3 bg-[#FAF5E8] border border-[#D6C9A5] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#C97F4D] focus:border-transparent" />
       </div>
 
       <div>
         <label class="text-xs text-slate-500 font-medium">얼마 들었어요? (원)</label>
         <div class="mt-2 grid grid-cols-2 gap-2">
-          <div class="bg-slate-100 rounded-xl px-3 py-2">
+          <div class="bg-[#FAF5E8] border border-[#D6C9A5] rounded-xl px-3 py-2">
             <div class="text-[11px] text-slate-500">🎫 입장료</div>
-            <input id="f_costEntry" type="number" inputmode="numeric" min="0" placeholder="0" class="w-full bg-transparent focus:outline-none mt-0.5 font-medium" />
+            <input id="f_costEntry" type="text" inputmode="numeric" placeholder="0" class="w-full bg-transparent focus:outline-none mt-0.5 font-medium" />
           </div>
-          <div class="bg-slate-100 rounded-xl px-3 py-2">
+          <div class="bg-[#FAF5E8] border border-[#D6C9A5] rounded-xl px-3 py-2">
             <div class="text-[11px] text-slate-500">🍽 음식값</div>
-            <input id="f_costFood" type="number" inputmode="numeric" min="0" placeholder="0" class="w-full bg-transparent focus:outline-none mt-0.5 font-medium" />
+            <input id="f_costFood" type="text" inputmode="numeric" placeholder="0" class="w-full bg-transparent focus:outline-none mt-0.5 font-medium" />
           </div>
-          <div class="bg-slate-100 rounded-xl px-3 py-2">
+          <div class="bg-[#FAF5E8] border border-[#D6C9A5] rounded-xl px-3 py-2">
             <div class="text-[11px] text-slate-500">🚗 교통비</div>
-            <input id="f_costTransport" type="number" inputmode="numeric" min="0" placeholder="0" class="w-full bg-transparent focus:outline-none mt-0.5 font-medium" />
+            <input id="f_costTransport" type="text" inputmode="numeric" placeholder="0" class="w-full bg-transparent focus:outline-none mt-0.5 font-medium" />
           </div>
-          <div class="bg-slate-100 rounded-xl px-3 py-2">
+          <div class="bg-[#FAF5E8] border border-[#D6C9A5] rounded-xl px-3 py-2">
             <div class="text-[11px] text-slate-500">✨ 기타</div>
-            <input id="f_costEtc" type="number" inputmode="numeric" min="0" placeholder="0" class="w-full bg-transparent focus:outline-none mt-0.5 font-medium" />
+            <input id="f_costEtc" type="text" inputmode="numeric" placeholder="0" class="w-full bg-transparent focus:outline-none mt-0.5 font-medium" />
           </div>
         </div>
         <div class="mt-2 text-right text-sm text-slate-600">합계 <span id="f_costSum" class="font-bold text-slate-800">₩0</span></div>
@@ -181,12 +181,12 @@
         <div id="receiptsGrid" class="mt-2 grid grid-cols-3 gap-2"></div>
         <label class="mt-2 block">
           <input type="file" id="f_receiptInput" accept="image/*" multiple class="hidden" />
-          <span class="block w-full py-2.5 rounded-xl bg-slate-100 text-slate-600 text-sm font-medium text-center cursor-pointer active:bg-slate-200">📸 영수증 찍거나 사진 고르기</span>
+          <span class="block w-full py-2.5 rounded-xl bg-[#FAF5E8] border border-[#D6C9A5] text-[#5D4E2F] text-sm font-medium text-center cursor-pointer active:bg-[#E5D8B5]">📸 영수증 찍거나 사진 고르기</span>
         </label>
       </div>
 
       <div>
-        <button id="f_petBtn" type="button" class="w-full py-3 rounded-xl flex items-center justify-center gap-2 font-medium text-sm bg-slate-100 text-slate-500 active:bg-slate-200">
+        <button id="f_petBtn" type="button" class="w-full py-3 rounded-xl flex items-center justify-center gap-2 font-medium text-sm bg-[#FAF5E8] border border-[#D6C9A5] text-[#7D6F4F] active:bg-[#E5D8B5]">
           <span class="text-lg">🐾</span>
           <span id="f_petLabel">반려동물과 함께 갈 수 있어요 (탭해서 켜기)</span>
         </button>
@@ -194,7 +194,7 @@
 
       <div class="flex gap-2 pt-2 pb-2">
         <button type="button" id="deleteBtn" class="hidden flex-1 py-3 rounded-xl bg-red-50 text-red-600 font-bold active:bg-red-100">지우기</button>
-        <button type="submit" class="flex-1 py-3 rounded-xl bg-sky-500 text-white font-bold active:bg-sky-600">저장</button>
+        <button type="submit" class="flex-1 py-3 rounded-xl bg-[#A05D30] text-white font-bold active:bg-[#8C4F26]">저장</button>
       </div>
     </form>
   </div>
@@ -211,15 +211,15 @@
     <h3 class="text-lg font-bold">📅 Day 정보 바꾸기</h3>
     <div class="mt-3">
       <label class="text-xs text-slate-500 font-medium">Day 이름</label>
-      <input id="dayEditLabel" type="text" placeholder="Day 1" class="mt-1 w-full px-4 py-2.5 bg-slate-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-400" />
+      <input id="dayEditLabel" type="text" placeholder="Day 1" class="mt-1 w-full px-4 py-2.5 bg-[#FAF5E8] border border-[#D6C9A5] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#C97F4D] focus:border-transparent" />
     </div>
     <div class="mt-3">
       <label class="text-xs text-slate-500 font-medium">날짜</label>
-      <input id="dayEditDate" type="date" class="mt-1 w-full px-4 py-2.5 bg-slate-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-400" />
+      <input id="dayEditDate" type="date" class="mt-1 w-full px-4 py-2.5 bg-[#FAF5E8] border border-[#D6C9A5] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#C97F4D] focus:border-transparent" />
     </div>
     <div class="mt-4 flex gap-2">
-      <button id="dayEditCancelBtn" type="button" class="flex-1 py-2.5 rounded-xl bg-slate-100 text-slate-600 font-medium active:bg-slate-200">취소</button>
-      <button id="dayEditOkBtn" type="button" class="flex-1 py-2.5 rounded-xl bg-sky-500 text-white font-bold active:bg-sky-600">좋아요</button>
+      <button id="dayEditCancelBtn" type="button" class="flex-1 py-2.5 rounded-xl bg-[#FAF5E8] border border-[#D6C9A5] text-[#5D4E2F] font-medium active:bg-[#E5D8B5]">취소</button>
+      <button id="dayEditOkBtn" type="button" class="flex-1 py-2.5 rounded-xl bg-[#A05D30] text-white font-bold active:bg-[#8C4F26]">좋아요</button>
     </div>
   </div>
 
@@ -228,11 +228,11 @@
   <div id="timePopup" class="hidden fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-80 max-w-[90vw] bg-white rounded-2xl shadow-2xl p-5">
     <h3 class="text-lg font-bold">⏰ 몇 시에 갈까요?</h3>
     <p class="text-sm text-slate-500 mt-1 truncate" id="timePopupTitle"></p>
-    <input id="timePopupInput" type="time" class="mt-4 w-full px-4 py-3 bg-slate-100 rounded-xl text-2xl font-bold text-center focus:outline-none focus:ring-2 focus:ring-sky-400" />
+    <input id="timePopupInput" type="time" class="mt-4 w-full px-4 py-3 bg-[#FAF5E8] border border-[#D6C9A5] rounded-xl text-2xl font-bold text-center focus:outline-none focus:ring-2 focus:ring-[#C97F4D] focus:border-transparent" />
     <p class="mt-2 text-[11px] text-slate-400 text-center">저장하면 시간 순서대로 정리해드려요</p>
     <div class="mt-3 flex gap-2">
-      <button id="timeCancelBtn" type="button" class="flex-1 py-2.5 rounded-xl bg-slate-100 text-slate-600 font-medium active:bg-slate-200">취소</button>
-      <button id="timeOkBtn" type="button" class="flex-1 py-2.5 rounded-xl bg-sky-500 text-white font-bold active:bg-sky-600">좋아요</button>
+      <button id="timeCancelBtn" type="button" class="flex-1 py-2.5 rounded-xl bg-[#FAF5E8] border border-[#D6C9A5] text-[#5D4E2F] font-medium active:bg-[#E5D8B5]">취소</button>
+      <button id="timeOkBtn" type="button" class="flex-1 py-2.5 rounded-xl bg-[#A05D30] text-white font-bold active:bg-[#8C4F26]">좋아요</button>
     </div>
   </div>
 
@@ -256,22 +256,22 @@
         <div class="mt-1 grid grid-cols-2 gap-2">
           <div>
             <div class="text-[11px] text-slate-400 mb-0.5">언제 떠나요?</div>
-            <input id="settingsStart" type="date" class="w-full px-3 py-2.5 bg-slate-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-400" />
+            <input id="settingsStart" type="date" class="w-full px-3 py-2.5 bg-[#FAF5E8] border border-[#D6C9A5] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#C97F4D] focus:border-transparent" />
           </div>
           <div>
             <div class="text-[11px] text-slate-400 mb-0.5">언제 돌아와요?</div>
-            <input id="settingsEnd" type="date" class="w-full px-3 py-2.5 bg-slate-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-400" />
+            <input id="settingsEnd" type="date" class="w-full px-3 py-2.5 bg-[#FAF5E8] border border-[#D6C9A5] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#C97F4D] focus:border-transparent" />
           </div>
         </div>
       </div>
       <div>
         <label class="text-xs text-slate-500 font-medium">어디로 가나요?</label>
         <div id="settingsScopePicker" class="mt-2 grid grid-cols-2 gap-2"></div>
-        <input id="settingsRegion" type="text" placeholder="예: 제주도, 도쿄, 발리" class="mt-2 w-full px-4 py-3 bg-slate-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-400" />
+        <input id="settingsRegion" type="text" placeholder="예: 제주도, 도쿄, 발리" class="mt-2 w-full px-4 py-3 bg-[#FAF5E8] border border-[#D6C9A5] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#C97F4D] focus:border-transparent" />
       </div>
       <div>
         <label class="text-xs text-slate-500 font-medium">반려동물과 함께 해요</label>
-        <button id="settingsPetBtn" type="button" class="mt-2 w-full py-3 rounded-xl flex items-center justify-center gap-2 font-medium text-sm bg-slate-100 text-slate-500 active:bg-slate-200">
+        <button id="settingsPetBtn" type="button" class="mt-2 w-full py-3 rounded-xl flex items-center justify-center gap-2 font-medium text-sm bg-[#FAF5E8] border border-[#D6C9A5] text-[#7D6F4F] active:bg-[#E5D8B5]">
           <span class="text-lg">🐾</span>
           <span id="settingsPetLabel">반려동물 없이 가요 (탭해서 바꿔요)</span>
         </button>
@@ -282,9 +282,9 @@
         <div class="mt-2">
           <label class="text-xs text-slate-500">총 몇 명 (본인 포함)</label>
           <div class="mt-1 flex items-center gap-2">
-            <button type="button" id="settingsCount_dec" class="w-12 h-12 rounded-xl bg-slate-100 text-2xl font-bold text-slate-600 active:bg-slate-200 shrink-0">−</button>
-            <input id="settingsCount" type="number" inputmode="numeric" min="1" class="flex-1 min-w-0 px-4 py-3 bg-slate-100 rounded-xl text-center text-lg font-bold focus:outline-none focus:ring-2 focus:ring-sky-400" />
-            <button type="button" id="settingsCount_inc" class="w-12 h-12 rounded-xl bg-slate-100 text-2xl font-bold text-slate-600 active:bg-slate-200 shrink-0">+</button>
+            <button type="button" id="settingsCount_dec" class="w-12 h-12 rounded-xl bg-[#FAF5E8] border border-[#D6C9A5] text-2xl font-bold text-[#5D4E2F] active:bg-[#E5D8B5] shrink-0">−</button>
+            <input id="settingsCount" type="number" inputmode="numeric" min="1" class="flex-1 min-w-0 px-4 py-3 bg-[#FAF5E8] border border-[#D6C9A5] rounded-xl text-center text-lg font-bold text-[#2D1F0F] focus:outline-none focus:ring-2 focus:ring-[#C97F4D] focus:border-transparent" />
+            <button type="button" id="settingsCount_inc" class="w-12 h-12 rounded-xl bg-[#FAF5E8] border border-[#D6C9A5] text-2xl font-bold text-[#5D4E2F] active:bg-[#E5D8B5] shrink-0">+</button>
           </div>
         </div>
       </div>
@@ -296,8 +296,8 @@
   <div id="mapSheet" class="hidden fixed inset-0 z-40 bg-white flex flex-col">
     <div class="px-3 py-3 border-b border-slate-100 flex items-center gap-2 shrink-0">
       <button id="mapBackBtn" class="text-slate-500 text-2xl leading-none w-9 h-9 flex items-center justify-center active:bg-slate-100 rounded-lg">‹</button>
-      <input id="mapSearch" type="text" placeholder="어디 찾아드릴까요? (예: 성산일출봉)" class="flex-1 px-3 py-2 bg-slate-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-400 text-sm" />
-      <button id="mapSearchBtn" class="px-3 py-2 rounded-xl bg-sky-500 text-white text-sm font-medium active:bg-sky-600">검색</button>
+      <input id="mapSearch" type="text" placeholder="어디 찾아드릴까요? (예: 성산일출봉)" class="flex-1 px-3 py-2 bg-[#FAF5E8] border border-[#D6C9A5] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#C97F4D] focus:border-transparent text-sm" />
+      <button id="mapSearchBtn" class="px-3 py-2 rounded-xl bg-[#A05D30] text-white text-sm font-medium active:bg-[#8C4F26]">검색</button>
     </div>
     <div id="mapResults" class="hidden border-b border-slate-100 max-h-48 overflow-y-auto shrink-0 bg-white"></div>
     <div class="flex-1 min-h-0 relative">
@@ -306,7 +306,7 @@
     </div>
     <div class="border-t border-slate-100 shrink-0 p-3 flex items-center gap-2">
       <div class="flex-1 text-xs text-slate-600 leading-snug" id="mapAddress">아직 위치가 없어요</div>
-      <button id="mapConfirmBtn" disabled class="px-4 py-2 rounded-xl bg-sky-500 text-white text-sm font-bold disabled:bg-slate-300 disabled:cursor-not-allowed active:bg-sky-600">이걸로 할게요</button>
+      <button id="mapConfirmBtn" disabled class="px-4 py-2 rounded-xl bg-[#A05D30] text-white text-sm font-bold disabled:bg-slate-300 disabled:cursor-not-allowed active:bg-[#8C4F26]">이걸로 할게요</button>
     </div>
   </div>
 
@@ -688,16 +688,20 @@
       dayEl.innerHTML = `
         <header class="flex items-center justify-between px-4 py-3 border-b border-slate-100">
           <div class="flex items-center gap-2 min-w-0">
-            <span class="text-sm font-bold text-sky-600 shrink-0">${escapeHtml(day.label)}</span>
+            <span class="text-sm font-bold text-[#6F7E4F] shrink-0">${escapeHtml(day.label)}</span>
             <span class="text-xs text-slate-500 truncate">${escapeHtml(day.date)}</span>
           </div>
-          <div class="flex items-center gap-1 shrink-0">
-            <button class="day-edit-btn p-2 text-slate-400 active:text-slate-600" data-day-id="${day.id}" title="편집">✎</button>
-            <button class="day-del-btn p-2 text-slate-400 active:text-red-500" data-day-id="${day.id}" title="삭제">🗑</button>
+          <div class="flex items-center shrink-0">
+            <button class="day-edit-btn px-1.5 py-2 text-slate-400 active:text-[#A05D30]" data-day-id="${day.id}" title="편집">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            </button>
+            <button class="day-del-btn px-1.5 py-2 text-slate-400 active:text-red-500" data-day-id="${day.id}" title="삭제">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+            </button>
           </div>
         </header>
         <div class="items-list p-3 space-y-2 min-h-[56px]" data-day-id="${day.id}"></div>
-        <button class="add-item-btn w-full py-3 border-t border-slate-100 text-sm text-sky-600 font-medium active:bg-sky-50" data-day-id="${day.id}">+ 일정 추가</button>
+        <button class="add-item-btn w-full py-3 border-t border-slate-100 text-sm text-[#A05D30] font-medium active:bg-[#F5EAD8]" data-day-id="${day.id}">+ 일정 추가</button>
       `;
       const itemsList = dayEl.querySelector('.items-list');
       day.items.forEach(item => itemsList.appendChild(renderItem(item, day.id)));
@@ -772,10 +776,10 @@
       </div>
       <button class="time-btn flex flex-col items-center justify-center min-w-[64px] px-1 py-3 border-r border-slate-200/70 active:bg-slate-100" title="시간 변경">
         ${item.time
-          ? `<div class="text-lg font-extrabold text-sky-600 leading-tight tabular-nums">${escapeHtml(item.time)}</div>`
+          ? `<div class="text-lg font-extrabold text-[#A05D30] leading-tight tabular-nums">${escapeHtml(item.time)}</div>`
           : `<div class="text-[11px] text-slate-400 leading-tight text-center">시간<br/>찍기</div>`}
       </button>
-      <button class="item-tap flex-1 text-left px-3 py-3 active:bg-slate-100">
+      <button class="item-tap flex-1 min-w-0 text-left px-3 py-3 active:bg-slate-100">
         <div class="flex items-center gap-1.5 flex-wrap">
           <span class="text-[11px] px-2 py-0.5 rounded-full ${cat.chip} font-medium leading-tight">${cat.emoji} ${cat.label}</span>
           ${item.petFriendly ? `<span class="text-[11px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 font-medium leading-tight">🐾</span>` : ''}
@@ -794,7 +798,14 @@
             ${item.receipts?.length ? `<span class="text-slate-500">🧾 ${item.receipts.length}</span>` : ''}
           </div>` : ''}
       </button>
-      <button class="fav-btn flex items-center px-3 active:bg-slate-100" title="즐겨찾기">${heartSvg(item.favorite)}</button>
+      <button class="fav-btn flex items-center px-2.5 active:bg-slate-100" title="즐겨찾기">${heartSvg(item.favorite)}</button>
+      <button class="del-btn flex items-center px-2.5 active:bg-slate-100" title="지우기">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 6h18"/>
+          <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+          <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+        </svg>
+      </button>
     `;
     el.querySelector('.item-tap').onclick = () => openSheet(dayId, item.id);
     el.querySelector('.time-btn').onclick = (e) => {
@@ -813,6 +824,15 @@
       save();
       el.querySelector('.fav-btn').innerHTML = heartSvg(item.favorite);
       toast(item.favorite ? '❤️ 마음에 담았어요' : '마음에서 뺐어요');
+    };
+    el.querySelector('.del-btn').onclick = (e) => {
+      e.stopPropagation();
+      if (!confirm(`'${item.title}'을(를) 지울까요?`)) return;
+      if (Array.isArray(item.receipts)) for (const pid of item.receipts) deletePhoto(pid);
+      const day = trip.days.find(d => d.id === dayId);
+      day.items = day.items.filter(i => i.id !== item.id);
+      save(); render();
+      toast('일정을 지웠어요');
     };
     return el;
   }
@@ -837,9 +857,20 @@
   }
 
   // ---------------- Item sheet ----------------
+  function parseCost(v) {
+    return Number(String(v).replace(/[^\d]/g, '')) || 0;
+  }
+  function formatCostInput(input) {
+    const start = input.selectionStart;
+    const beforeLen = input.value.length;
+    const num = parseCost(input.value);
+    input.value = num ? num.toLocaleString() : '';
+    const diff = input.value.length - beforeLen;
+    try { input.setSelectionRange(Math.max(0, (start || 0) + diff), Math.max(0, (start || 0) + diff)); } catch {}
+  }
   function updateCostSum() {
     const sum = ['Entry','Food','Transport','Etc'].reduce((s, k) =>
-      s + (Number(document.getElementById('f_cost'+k).value) || 0), 0);
+      s + parseCost(document.getElementById('f_cost'+k).value), 0);
     document.getElementById('f_costSum').textContent = '₩' + sum.toLocaleString();
   }
   function renderTransportPicker() {
@@ -849,7 +880,7 @@
       const b = document.createElement('button');
       b.type = 'button'; b.dataset.mode = m.id;
       const selected = tempTransportMode === m.id;
-      b.className = `py-2 rounded-xl text-[11px] font-medium bg-slate-100 ${selected ? 'ring-2 ring-sky-400 bg-sky-50' : 'opacity-70'} active:opacity-100`;
+      b.className = `py-2 rounded-xl text-[11px] font-medium bg-slate-100 ${selected ? 'ring-2 ring-[#A05D30] bg-[#F5EAD8]' : 'opacity-70'} active:opacity-100`;
       b.innerHTML = `<div class="text-lg leading-none">${m.emoji}</div><div class="mt-0.5">${m.label}</div>`;
       b.onclick = () => {
         tempTransportMode = (tempTransportMode === m.id) ? '' : m.id;
@@ -865,7 +896,7 @@
       btn.className = 'w-full py-3 rounded-xl flex items-center justify-center gap-2 font-medium text-sm bg-emerald-100 text-emerald-700 ring-2 ring-emerald-300 active:bg-emerald-200';
       label.textContent = '반려동물과 함께 갈 수 있어요';
     } else {
-      btn.className = 'w-full py-3 rounded-xl flex items-center justify-center gap-2 font-medium text-sm bg-slate-100 text-slate-500 active:bg-slate-200';
+      btn.className = 'w-full py-3 rounded-xl flex items-center justify-center gap-2 font-medium text-sm bg-[#FAF5E8] border border-[#D6C9A5] text-[#7D6F4F] active:bg-[#E5D8B5]';
       label.textContent = '반려동물과 함께 갈 수 있어요 (탭해서 켜기)';
     }
   }
@@ -895,7 +926,7 @@
         </div>
         <div class="mt-2 font-bold text-sm text-slate-800 truncate">${escapeHtml(r.title)}</div>
         <div class="mt-0.5 text-[11px] text-slate-500 overflow-hidden" style="display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;min-height:28px;">${escapeHtml(r.desc || '')}</div>
-        <div class="mt-2 text-[11px] text-sky-600 font-medium">+ 일정에 담기</div>
+        <div class="mt-2 text-[11px] text-[#A05D30] font-medium">+ 일정에 담기</div>
       `;
       card.onclick = () => addRecommendation(r);
       list.appendChild(card);
@@ -954,8 +985,8 @@
     const mapBtn = document.getElementById('modeMapBtn');
     const titleEl = document.getElementById('f_title');
     const mapSec = document.getElementById('mapSection');
-    const sel = 'py-2.5 rounded-xl text-sm font-medium bg-sky-100 text-sky-700 ring-2 ring-sky-400';
-    const unsel = 'py-2.5 rounded-xl text-sm font-medium bg-slate-100 text-slate-500 active:bg-slate-200';
+    const sel = 'py-2.5 rounded-xl text-sm font-medium bg-[#F0E0C9] text-[#A05D30] ring-2 ring-[#A05D30]';
+    const unsel = 'py-2.5 rounded-xl text-sm font-medium bg-[#FAF5E8] border border-[#D6C9A5] text-[#7D6F4F] active:bg-[#E5D8B5]';
     if (tempInputMode === 'manual') {
       manualBtn.className = sel;
       mapBtn.className = unsel;
@@ -991,7 +1022,7 @@
       const b = document.createElement('button');
       b.type = 'button';
       const sel = selectedDayId === ctx.id;
-      b.className = `px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap shrink-0 ${sel ? 'bg-sky-500 text-white shadow' : 'bg-slate-100 text-slate-600'}`;
+      b.className = `px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap shrink-0 ${sel ? 'bg-[#6F7E4F] text-white shadow' : 'bg-slate-100 text-slate-600'}`;
       b.textContent = `${ctx.label}${ctx.date ? ' · ' + ctx.date : ''}`;
       b.onclick = () => { selectedDayId = ctx.id; renderDayPicker(); };
       picker.appendChild(b);
@@ -999,7 +1030,7 @@
     const addBtn = document.createElement('button');
     addBtn.type = 'button';
     const sel = selectedDayId === PENDING_NEW_DAY;
-    addBtn.className = `px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap shrink-0 ${sel ? 'bg-sky-500 text-white shadow' : 'bg-white text-slate-500 border-2 border-dashed border-slate-300'}`;
+    addBtn.className = `px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap shrink-0 ${sel ? 'bg-[#6F7E4F] text-white shadow' : 'bg-white text-slate-500 border-2 border-dashed border-slate-300'}`;
     addBtn.textContent = `+ Day ${trip.days.length + 1}`;
     addBtn.onclick = () => { selectedDayId = PENDING_NEW_DAY; renderDayPicker(); };
     picker.appendChild(addBtn);
@@ -1030,10 +1061,10 @@
     document.getElementById('f_time').value          = item?.time || '';
     document.getElementById('f_desc').value          = item?.desc || '';
     document.getElementById('f_transportDetail').value = item?.transportDetail || '';
-    document.getElementById('f_costEntry').value     = item?.costEntry || '';
-    document.getElementById('f_costFood').value      = item?.costFood || '';
-    document.getElementById('f_costTransport').value = item?.costTransport || '';
-    document.getElementById('f_costEtc').value       = item?.costEtc || '';
+    document.getElementById('f_costEntry').value     = item?.costEntry ? item.costEntry.toLocaleString() : '';
+    document.getElementById('f_costFood').value      = item?.costFood ? item.costFood.toLocaleString() : '';
+    document.getElementById('f_costTransport').value = item?.costTransport ? item.costTransport.toLocaleString() : '';
+    document.getElementById('f_costEtc').value       = item?.costEtc ? item.costEtc.toLocaleString() : '';
 
     tempLocation = item?.location ? { ...item.location } : null;
     tempTransportMode = item?.transportMode || '';
@@ -1054,13 +1085,13 @@
     CATEGORIES.filter(c => !c.hidden).forEach(c => {
       const b = document.createElement('button');
       b.type = 'button'; b.dataset.cat = c.id;
-      b.className = `py-2 rounded-xl text-[11px] font-medium ${c.chip} ${selectedCat===c.id ? 'ring-2 ring-sky-400' : 'opacity-60'}`;
+      b.className = `py-2 rounded-xl text-[11px] font-medium ${c.chip} ${selectedCat===c.id ? 'ring-2 ring-[#A05D30]' : 'opacity-60'}`;
       b.innerHTML = `<div class="text-lg leading-none">${c.emoji}</div><div class="mt-0.5">${c.label}</div>`;
       b.onclick = () => {
         selectedCat = c.id;
         [...picker.children].forEach(child => {
           const cc = getCat(child.dataset.cat);
-          child.className = `py-2 rounded-xl text-[11px] font-medium ${cc.chip} ${selectedCat===cc.id ? 'ring-2 ring-sky-400' : 'opacity-60'}`;
+          child.className = `py-2 rounded-xl text-[11px] font-medium ${cc.chip} ${selectedCat===cc.id ? 'ring-2 ring-[#A05D30]' : 'opacity-60'}`;
         });
       };
       picker.appendChild(b);
@@ -1076,10 +1107,10 @@
         transportMode:     tempTransportMode,
         transportDetail:   document.getElementById('f_transportDetail').value.trim(),
         location:          tempInputMode === 'map' ? tempLocation : null,
-        costEntry:         Number(document.getElementById('f_costEntry').value) || 0,
-        costFood:          Number(document.getElementById('f_costFood').value) || 0,
-        costTransport:     Number(document.getElementById('f_costTransport').value) || 0,
-        costEtc:           Number(document.getElementById('f_costEtc').value) || 0,
+        costEntry:         parseCost(document.getElementById('f_costEntry').value),
+        costFood:          parseCost(document.getElementById('f_costFood').value),
+        costTransport:     parseCost(document.getElementById('f_costTransport').value),
+        costEtc:           parseCost(document.getElementById('f_costEtc').value),
         petFriendly:       tempPetFriendly,
         receipts:          [...tempReceipts],
       };
@@ -1230,7 +1261,7 @@
     COVER_THEMES.forEach(t => {
       const b = document.createElement('button');
       b.type = 'button';
-      b.className = `aspect-square rounded-2xl bg-gradient-to-br ${t.gradient} text-2xl flex items-center justify-center shadow ${current===t.id ? 'ring-4 ring-sky-300' : ''}`;
+      b.className = `aspect-square rounded-2xl bg-gradient-to-br ${t.gradient} text-2xl flex items-center justify-center shadow ${current===t.id ? 'ring-4 ring-[#A05D30]' : ''}`;
       b.textContent = t.emoji;
       b.onclick = () => { trip.cover = { theme: t.id }; save(); render(); openSettings(); };
       picker.appendChild(b);
@@ -1244,7 +1275,7 @@
       const b = document.createElement('button');
       b.type = 'button';
       const selected = curComp === c.id;
-      b.className = `py-2 rounded-xl text-[11px] font-medium bg-slate-100 ${selected ? 'ring-2 ring-sky-400 bg-sky-50' : 'opacity-70'}`;
+      b.className = `py-2 rounded-xl text-[11px] font-medium bg-slate-100 ${selected ? 'ring-2 ring-[#A05D30] bg-[#F5EAD8]' : 'opacity-70'}`;
       b.innerHTML = `<div class="text-xl leading-none">${c.emoji}</div><div class="mt-0.5">${c.label}</div>`;
       b.onclick = () => {
         const newType = (curComp === c.id) ? '' : c.id;
@@ -1267,7 +1298,7 @@
       const b = document.createElement('button');
       b.type = 'button';
       const sel = curScope === s.id;
-      b.className = `py-2.5 rounded-xl text-sm font-medium bg-slate-100 ${sel ? 'ring-2 ring-sky-400 bg-sky-50' : 'opacity-70'}`;
+      b.className = `py-2.5 rounded-xl text-sm font-medium bg-slate-100 ${sel ? 'ring-2 ring-[#A05D30] bg-[#F5EAD8]' : 'opacity-70'}`;
       b.innerHTML = `${s.emoji} ${s.label}`;
       b.onclick = () => {
         const newScope = (curScope === s.id) ? '' : s.id;
@@ -1289,7 +1320,7 @@
       btn.className = 'mt-2 w-full py-3 rounded-xl flex items-center justify-center gap-2 font-medium text-sm bg-emerald-100 text-emerald-700 ring-2 ring-emerald-300 active:bg-emerald-200';
       label.textContent = '반려동물과 함께 해요';
     } else {
-      btn.className = 'mt-2 w-full py-3 rounded-xl flex items-center justify-center gap-2 font-medium text-sm bg-slate-100 text-slate-500 active:bg-slate-200';
+      btn.className = 'mt-2 w-full py-3 rounded-xl flex items-center justify-center gap-2 font-medium text-sm bg-[#FAF5E8] border border-[#D6C9A5] text-[#7D6F4F] active:bg-[#E5D8B5]';
       label.textContent = '반려동물 없이 가요 (탭해서 바꿔요)';
     }
   }
@@ -1518,7 +1549,8 @@
   };
 
   ['Entry','Food','Transport','Etc'].forEach(k => {
-    document.getElementById('f_cost'+k).addEventListener('input', updateCostSum);
+    const el = document.getElementById('f_cost'+k);
+    el.addEventListener('input', () => { formatCostInput(el); updateCostSum(); });
   });
 
   document.getElementById('openMapBtn').onclick = openMap;
