@@ -1153,7 +1153,11 @@
     };
 
     document.getElementById('sheetBackdrop').classList.remove('hidden');
-    document.getElementById('sheet').classList.remove('hidden');
+    const sheetEl = document.getElementById('sheet');
+    sheetEl.classList.remove('hidden');
+    // 시트 진입 시 항상 상단부터 보이도록 스크롤 리셋
+    sheetEl.scrollTop = 0;
+    requestAnimationFrame(() => { sheetEl.scrollTop = 0; });
     document.body.style.overflow = 'hidden';
   }
   function closeSheet() {
