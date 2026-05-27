@@ -139,7 +139,7 @@
 
       <div>
         <label class="text-xs text-slate-500 font-medium">몇 시쯤? (선택)</label>
-        <input id="f_time" type="time" class="mt-1 w-full px-4 py-3 bg-[#FAF5E8] border border-[#D6C9A5] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#C97F4D] focus:border-transparent" />
+        <input id="f_time" type="time" class="mt-1 block w-full max-w-full min-w-0 box-border px-3 py-3 bg-[#FAF5E8] border border-[#D6C9A5] rounded-xl focus:outline-none focus:ring-2 focus:ring-inset focus:ring-[#C97F4D] appearance-none" />
       </div>
 
       <div>
@@ -215,7 +215,7 @@
     </div>
     <div class="mt-3">
       <label class="text-xs text-slate-500 font-medium">날짜</label>
-      <input id="dayEditDate" type="date" class="mt-1 w-full px-4 py-2.5 bg-[#FAF5E8] border border-[#D6C9A5] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#C97F4D] focus:border-transparent" />
+      <input id="dayEditDate" type="date" class="mt-1 block w-full max-w-full min-w-0 box-border px-3 py-2.5 bg-[#FAF5E8] border border-[#D6C9A5] rounded-xl focus:outline-none focus:ring-2 focus:ring-inset focus:ring-[#C97F4D] appearance-none" />
     </div>
     <div class="mt-4 flex gap-2">
       <button id="dayEditCancelBtn" type="button" class="flex-1 py-2.5 rounded-xl bg-[#FAF5E8] border border-[#D6C9A5] text-[#5D4E2F] font-medium active:bg-[#E5D8B5]">취소</button>
@@ -225,10 +225,10 @@
 
   <!-- Time popup -->
   <div id="timeBackdrop" class="hidden fixed inset-0 bg-black/50 z-40 backdrop-enter"></div>
-  <div id="timePopup" class="hidden fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-80 max-w-[90vw] bg-white rounded-2xl shadow-2xl p-5">
+  <div id="timePopup" class="hidden fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-80 max-w-[88vw] bg-white rounded-2xl shadow-2xl p-5 overflow-hidden">
     <h3 class="text-lg font-bold">⏰ 몇 시에 갈까요?</h3>
     <p class="text-sm text-slate-500 mt-1 truncate" id="timePopupTitle"></p>
-    <input id="timePopupInput" type="time" class="mt-4 w-full px-4 py-3 bg-[#FAF5E8] border border-[#D6C9A5] rounded-xl text-2xl font-bold text-center focus:outline-none focus:ring-2 focus:ring-[#C97F4D] focus:border-transparent" />
+    <input id="timePopupInput" type="time" class="mt-4 block w-full max-w-full min-w-0 box-border px-3 py-2.5 bg-[#FAF5E8] border border-[#D6C9A5] rounded-xl text-xl font-bold text-center focus:outline-none focus:ring-2 focus:ring-inset focus:ring-[#C97F4D] appearance-none" />
     <p class="mt-2 text-[11px] text-slate-400 text-center">저장하면 시간 순서대로 정리해드려요</p>
     <div class="mt-3 flex gap-2">
       <button id="timeCancelBtn" type="button" class="flex-1 py-2.5 rounded-xl bg-[#FAF5E8] border border-[#D6C9A5] text-[#5D4E2F] font-medium active:bg-[#E5D8B5]">취소</button>
@@ -256,11 +256,11 @@
         <div class="mt-1 grid grid-cols-2 gap-2">
           <div>
             <div class="text-[11px] text-slate-400 mb-0.5">언제 떠나요?</div>
-            <input id="settingsStart" type="date" class="w-full px-3 py-2.5 bg-[#FAF5E8] border border-[#D6C9A5] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#C97F4D] focus:border-transparent" />
+            <input id="settingsStart" type="date" class="block w-full max-w-full min-w-0 box-border px-3 py-2.5 bg-[#FAF5E8] border border-[#D6C9A5] rounded-xl focus:outline-none focus:ring-2 focus:ring-inset focus:ring-[#C97F4D] appearance-none" />
           </div>
           <div>
             <div class="text-[11px] text-slate-400 mb-0.5">언제 돌아와요?</div>
-            <input id="settingsEnd" type="date" class="w-full px-3 py-2.5 bg-[#FAF5E8] border border-[#D6C9A5] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#C97F4D] focus:border-transparent" />
+            <input id="settingsEnd" type="date" class="block w-full max-w-full min-w-0 box-border px-3 py-2.5 bg-[#FAF5E8] border border-[#D6C9A5] rounded-xl focus:outline-none focus:ring-2 focus:ring-inset focus:ring-[#C97F4D] appearance-none" />
           </div>
         </div>
       </div>
