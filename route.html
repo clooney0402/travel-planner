@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#0ea5e9" />
+  <title>여행 동선</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/lz-string@1.5.0/libs/lz-string.min.js"></script>
+  <style>
+    html, body { font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Pretendard", system-ui, sans-serif; -webkit-tap-highlight-color: transparent; }
+    body { display: flex; flex-direction: column; min-height: 100vh; }
+    #mapWrap { flex: 1; min-height: 0; position: relative; }
+    #map { position: absolute; inset: 0; }
+    .leaflet-control-attribution { font-size: 9px !important; }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { scrollbar-width: none; }
+    .route-pin {
+      width: 32px; height: 32px;
+      border-radius: 50% 50% 50% 0;
+      transform: rotate(-45deg);
+      display: flex; align-items: center; justify-content: center;
+      color: white; font-weight: 700; font-size: 13px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.35);
+      border: 2px solid white;
+    }
+    .route-pin > span { transform: rotate(45deg); display: block; line-height: 1; }
+    .leaflet-popup-content { margin: 10px 12px !important; min-width: 160px; }
+  </style>
+</head>
+<body class="bg-slate-100">
+
+  <header class="bg-gradient-to-br from-sky-500 via-sky-400 to-cyan-400 text-white px-5 pt-10 pb-3 shadow-lg shrink-0">
+    <div class="max-w-md mx-auto">
+      <div class="flex items-center justify-between">
+        <a id="backLink" href="#" class="inline-flex items-center gap-1 text-sm text-white/95 active:opacity-70">
+          <span class="text-lg leading-none">‹</span><span>여행으로</span>
+        </a>
+        <button id="shareBtn" class="text-white/95 active:opacity-70 text-lg leading-none p-1" title="동선 공유">📤</button>
+      </div>
+      <div class="mt-1">
+        <h1 class="text-2xl font-extrabold">🗺 여행 동선</h1>
+        <div id="tripSubtitle" class="text-xs text-white/90 mt-0.5 truncate"></div>
+      </div>
+    </div>
+  </header>
+
+  <div class="max-w-md mx-auto w-full px-4 py-2 shrink-0 bg-slate-100">
+    <div id="dayFilter" class="flex gap-2 overflow-x-auto no-scrollbar -mx-4 px-4 pb-1"></div>
+  </div>
+
+  <div class="max-w-md mx-auto w-full" id="mapWrap">
+    <div id="map"></div>
+    <div id="emptyState" class="hidden absolute inset-0 flex items-center justify-center bg-slate-100/95 z-[5]">
+      <div class="text-center px-8">
+        <div class="text-5xl">📍</div>
+        <p class="mt-3 text-slate-500 font-medium">아직 위치가 찍힌 일정이 없어요</p>
+        <p class="text-slate-400 text-sm mt-1">일정에 위치를 찍으면 동선이 한눈에 보여요</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="max-w-md mx-auto w-full bg-white border-t border-slate-200 px-4 py-3 shrink-0">
+    <div class="flex items-center justify-between">
+      <span id="statsCount" class="text-sm text-slate-500">위치 0곳</span>
+      <span id="statsDistance" class="text-base font-bold text-slate-800 tabular-nums">총 0 km</span>
+    </div>
+    <div id="legend" class="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-slate-500"></div>
+  </div>
+
+  <script>
+    const STORAGE_KEY = 'travel-planner-v2';
+    const DAY_COLORS = ['#0ea5e9', '#10b981', '#f43f5e', '#f59e0b', '#a855f7', '#06b6d4', '#84cc16', '#ec4899'];
+    const CATEGORIES = [
+      { id: 'sight', label: '관광', emoji: '🏝️' },
+      { id: 'food',  label: '맛집', emoji: '🍜' },
+      { id: 'move',  label: '이동', emoji: '🚗' },
+      { id: 'stay',  label: '숙소', emoji: '🏨' },
+      { id: 'etc',   label: '기타', emoji: '✨' },
+    ];
+    const getCat = (id) => CATEGORIES.find(c => c.id === id) || CATEGORIES[4];
+    const escapeHtml = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+    function loadState() {
+      try { const v2 = localStorage.getItem(STORAGE_KEY); if (v2) return JSON.parse(v2); } catch {}
+      return { trips: [] };
+    }
+
+    const params = new URLSearchParams(location.search);
+    const tripId = params.get('id');
+    const state = loadState();
+    const trip = state.trips.find(t => t.id === tripId);
+    if (!trip) { location.replace('index.html'); throw new Error('no trip'); }
+
+    document.getElementById('backLink').href = `trip.html?id=${trip.id}`;
+    document.getElementById('tripSubtitle').textContent = `${trip.title || ''}${trip.dates ? ' · ' + trip.dates : ''}`;
+
+    // Collect points with day index (preserves time order since trip auto-sorts)
+    const points = [];
+    trip.days.forEach((d, di) => {
+      d.items.forEach((it) => {
+        if (it.location?.lat && it.location?.lng) {
+          points.push({ dayIdx: di, dayLabel: d.label, item: it });
+        }
+      });
+    });
+
+    let selectedDay = 'all';
+    let map, markers = [], polylines = [];
+
+    function haversine(a, b) {
+      const R = 6371e3;
+      const φ1 = a.lat * Math.PI / 180, φ2 = b.lat * Math.PI / 180;
+      const dφ = (b.lat - a.lat) * Math.PI / 180;
+      const dλ = (b.lng - a.lng) * Math.PI / 180;
+      const x = Math.sin(dφ/2)**2 + Math.cos(φ1) * Math.cos(φ2) * Math.sin(dλ/2)**2;
+      return 2 * R * Math.atan2(Math.sqrt(x), Math.sqrt(1-x));
+    }
+
+    function dayColor(di) { return DAY_COLORS[di % DAY_COLORS.length]; }
+
+    function renderDayFilter() {
+      const filter = document.getElementById('dayFilter');
+      filter.innerHTML = '';
+      filter.appendChild(makeChip('all', '전체', points.length, '#0ea5e9'));
+      trip.days.forEach((d, di) => {
+        const cnt = points.filter(p => p.dayIdx === di).length;
+        if (cnt > 0) filter.appendChild(makeChip(String(di), d.label, cnt, dayColor(di)));
+      });
+    }
+
+    function makeChip(value, label, count, color) {
+      const b = document.createElement('button');
+      const active = String(selectedDay) === value;
+      b.className = `px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap shrink-0 ${active ? 'text-white shadow' : 'bg-white text-slate-700 border'}`;
+      if (active) { b.style.backgroundColor = color; b.style.borderColor = color; }
+      else { b.style.borderColor = color + '55'; }
+      b.innerHTML = `${escapeHtml(label)} <span class="${active ? 'text-white/85' : 'text-slate-400'}">${count}</span>`;
+      b.onclick = () => { selectedDay = value; render(); };
+      return b;
+    }
+
+    function render() {
+      renderDayFilter();
+
+      markers.forEach(m => map.removeLayer(m));
+      polylines.forEach(l => map.removeLayer(l));
+      markers = []; polylines = [];
+
+      const visible = selectedDay === 'all'
+        ? points
+        : points.filter(p => String(p.dayIdx) === String(selectedDay));
+
+      const emptyEl = document.getElementById('emptyState');
+      if (!visible.length) {
+        emptyEl.classList.remove('hidden');
+        document.getElementById('statsCount').textContent = '위치 0곳';
+        document.getElementById('statsDistance').textContent = '총 0 km';
+        document.getElementById('legend').innerHTML = '';
+        return;
+      }
+      emptyEl.classList.add('hidden');
+
+      const byDay = {};
+      visible.forEach(p => { (byDay[p.dayIdx] ||= []).push(p); });
+
+      let totalDist = 0;
+      Object.entries(byDay).forEach(([di, dayPts]) => {
+        const color = dayColor(Number(di));
+        if (dayPts.length >= 2) {
+          const coords = dayPts.map(p => [p.item.location.lat, p.item.location.lng]);
+          const line = L.polyline(coords, { color, weight: 4, opacity: 0.75 }).addTo(map);
+          polylines.push(line);
+          for (let i = 0; i < dayPts.length - 1; i++) {
+            totalDist += haversine(dayPts[i].item.location, dayPts[i+1].item.location);
+          }
+        }
+        dayPts.forEach((p, idx) => {
+          const num = idx + 1;
+          const cat = getCat(p.item.category);
+          const icon = L.divIcon({
+            html: `<div class="route-pin" style="background:${color}"><span>${num}</span></div>`,
+            className: 'route-marker',
+            iconSize: [32, 32],
+            iconAnchor: [16, 32],
+            popupAnchor: [0, -28],
+          });
+          const m = L.marker([p.item.location.lat, p.item.location.lng], { icon }).addTo(map);
+          const shortAddr = p.item.location.address ? p.item.location.address.split(',').slice(0, 2).join(',').trim() : '';
+          m.bindPopup(`
+            <div class="text-sm">
+              <div class="font-bold text-slate-800">${cat.emoji} ${escapeHtml(p.item.title)}</div>
+              <div class="text-xs text-slate-500 mt-0.5">${escapeHtml(p.dayLabel)}${p.item.time ? ' · ' + escapeHtml(p.item.time) : ''}</div>
+              ${shortAddr ? `<div class="text-[11px] text-slate-500 mt-0.5">📍 ${escapeHtml(shortAddr)}</div>` : ''}
+            </div>
+          `);
+          markers.push(m);
+        });
+      });
+
+      if (markers.length > 0) {
+        const group = L.featureGroup([...markers, ...polylines]);
+        map.fitBounds(group.getBounds(), { padding: [40, 40], maxZoom: 14 });
+      }
+
+      document.getElementById('statsCount').textContent = `위치 ${visible.length}곳`;
+      const km = totalDist / 1000;
+      document.getElementById('statsDistance').textContent = km < 1
+        ? `총 ${Math.round(totalDist)} m`
+        : `총 ${km.toFixed(1)} km`;
+
+      const legend = document.getElementById('legend');
+      legend.innerHTML = '';
+      Object.keys(byDay).sort((a,b) => Number(a) - Number(b)).forEach(di => {
+        const color = dayColor(Number(di));
+        const span = document.createElement('span');
+        span.className = 'inline-flex items-center gap-1';
+        span.innerHTML = `<span style="background:${color}" class="inline-block w-3 h-3 rounded-full"></span>${escapeHtml(byDay[di][0].dayLabel)}`;
+        legend.appendChild(span);
+      });
+    }
+
+    map = L.map('map', { zoomControl: true }).setView([36.5, 127.8], 7);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OSM', maxZoom: 19,
+    }).addTo(map);
+    setTimeout(() => map.invalidateSize(), 100);
+
+    render();
+
+    // Share — encodes the full trip data (recipient gets the route view too)
+    document.getElementById('shareBtn').onclick = async () => {
+      try {
+        const exportable = {
+          title: trip.title, dates: trip.dates,
+          startDate: trip.startDate, endDate: trip.endDate,
+          cover: trip.cover, companion: trip.companion,
+          region: trip.region, withPet: !!trip.withPet,
+          days: trip.days.map(d => ({
+            label: d.label, date: d.date,
+            items: d.items.map(it => ({
+              category: it.category, title: it.title, time: it.time, desc: it.desc,
+              transportMode: it.transportMode, transportDetail: it.transportDetail,
+              location: it.location,
+              costEntry: it.costEntry, costFood: it.costFood,
+              costTransport: it.costTransport, costEtc: it.costEtc,
+              petFriendly: !!it.petFriendly,
+            })),
+          })),
+        };
+        const compressed = LZString.compressToEncodedURIComponent(JSON.stringify(exportable));
+        const url = `${location.origin}/index.html#import=${compressed}`;
+        const km = (() => {
+          let total = 0;
+          trip.days.forEach(d => {
+            const pts = d.items.filter(i => i.location?.lat).map(i => i.location);
+            for (let i = 0; i < pts.length - 1; i++) total += haversine(pts[i], pts[i+1]);
+          });
+          return total / 1000;
+        })();
+        const text = `🗺 ${trip.title} 동선\n${trip.dates || ''}\n📍 위치 ${points.length}곳 · 총 ${km.toFixed(1)} km\n\n🔗 이 여행 코스 그대로 가져가기:\n${url}\n\n— Travel Planner`;
+        if (navigator.share) {
+          try { await navigator.share({ title: trip.title, text }); return; }
+          catch (e) { if (e.name === 'AbortError') return; }
+        }
+        await navigator.clipboard.writeText(text);
+        alert('📋 복사했어요! 친구에게 보내보세요');
+      } catch (e) {
+        alert('공유에 실패했어요. 잠시 후 다시 시도해주세요');
+      }
+    };
+  </script>
+</body>
+</html>

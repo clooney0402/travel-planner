@@ -1,0 +1,1663 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#0ea5e9" />
+  <title>여행 일정</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/lz-string@1.5.0/libs/lz-string.min.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <!-- Tailwind dynamic class hint -->
+  <div class="hidden from-sky-400 to-cyan-400 from-emerald-400 to-teal-500 from-fuchsia-400 to-purple-500 from-amber-400 to-orange-500 from-orange-400 to-rose-500 from-slate-300 to-sky-500 from-yellow-400 to-orange-600 from-indigo-500 to-slate-800"></div>
+  <style>
+    html, body { font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Pretendard", system-ui, sans-serif; -webkit-tap-highlight-color: transparent; }
+    .drag-handle { touch-action: none; cursor: grab; }
+    .drag-handle:active { cursor: grabbing; }
+    .sortable-ghost { opacity: 0.25; }
+    .sortable-chosen { transform: scale(1.02); }
+    .sortable-drag { box-shadow: 0 12px 32px rgba(0,0,0,0.18); transform: rotate(-1.2deg); }
+    .sheet-enter { animation: slideUp 0.22s cubic-bezier(.2,.8,.2,1); }
+    @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+    .backdrop-enter { animation: fadeIn 0.18s ease-out; }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    input[type="time"]::-webkit-calendar-picker-indicator { opacity: 0.4; }
+    input[type=number]::-webkit-outer-spin-button,
+    input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+    input[type=number] { -moz-appearance: textfield; }
+    #mapEl { z-index: 0; }
+    .leaflet-control-attribution { font-size: 9px !important; }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { scrollbar-width: none; }
+  </style>
+</head>
+<body class="bg-slate-100 min-h-screen pb-24">
+
+  <header id="appHeader" class="text-white px-5 pt-10 pb-5 shadow-lg bg-gradient-to-br from-sky-400 to-cyan-400">
+    <div class="max-w-md mx-auto">
+      <div class="flex items-center justify-between">
+        <a href="index.html" class="flex items-center gap-1 text-sm text-white/95 active:opacity-70">
+          <span class="text-lg leading-none">‹</span><span>내 여행으로</span>
+        </a>
+        <div class="flex items-center gap-2">
+          <button id="shareBtn" class="text-white/95 active:opacity-70 text-lg leading-none p-1" title="여행 공유">📤</button>
+          <button id="settingsBtn" class="text-white/95 active:opacity-70 text-lg leading-none p-1" title="여행 설정">⚙</button>
+        </div>
+      </div>
+      <div class="mt-3 flex items-center gap-3">
+        <button id="coverEmojiBtn" class="text-4xl drop-shadow leading-none active:scale-95 transition">🏝️</button>
+        <div class="flex-1 min-w-0">
+          <input id="tripTitle" class="bg-transparent text-2xl font-extrabold w-full focus:outline-none placeholder-white/70" placeholder="여행 제목" />
+          <button id="tripDatesBtn" type="button" class="text-sm text-white/90 w-full mt-0.5 text-left active:opacity-70 truncate flex items-center gap-1"><span id="tripDatesText">언제 떠나는지 알려주세요</span><span class="text-[11px] opacity-70">✎</span></button>
+          <div class="mt-1 flex flex-wrap items-center gap-1">
+            <button id="regionBtn" class="hidden inline-flex items-center bg-white/20 backdrop-blur px-2 py-0.5 rounded-full text-[11px] font-medium active:opacity-70"></button>
+            <button id="companionBtn" class="hidden inline-flex items-center bg-white/20 backdrop-blur px-2 py-0.5 rounded-full text-[11px] font-medium active:opacity-70"></button>
+            <button id="petBtn" class="hidden inline-flex items-center bg-white/20 backdrop-blur px-2 py-0.5 rounded-full text-[11px] font-medium active:opacity-70">🐾 반려동물과 함께</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-4 flex items-center gap-2">
+        <a id="settleLink" href="#" class="flex-1 bg-white/20 rounded-xl px-3 py-2 backdrop-blur active:bg-white/30 block">
+          <div class="text-[11px] text-white/80 leading-none flex items-center justify-between">
+            <span>총 지출</span><span class="text-[10px]">정산하기 ›</span>
+          </div>
+          <div id="totalSpend" class="text-base font-bold mt-0.5">₩0</div>
+        </a>
+        <div class="flex-1 bg-white/20 rounded-xl px-3 py-2 backdrop-blur">
+          <div class="text-[11px] text-white/80 leading-none">일정</div>
+          <div id="totalCount" class="text-base font-bold mt-0.5">0개</div>
+        </div>
+        <div class="flex-1 bg-white/20 rounded-xl px-3 py-2 backdrop-blur">
+          <div class="text-[11px] text-white/80 leading-none">일수</div>
+          <div id="totalDays" class="text-base font-bold mt-0.5">0일</div>
+        </div>
+      </div>
+      <div id="costBreakdown" class="mt-2 text-[11px] text-white/85"></div>
+    </div>
+  </header>
+
+  <main class="max-w-md mx-auto px-4 py-4">
+    <div class="mb-4">
+      <button id="addItemBtn" class="w-full py-3.5 rounded-2xl bg-sky-500 text-white font-bold active:bg-sky-600 shadow-md">+ 일정 추가하기</button>
+      <a id="routeLink" href="#" class="hidden mt-2 w-full block py-2.5 rounded-2xl bg-white border border-slate-200 text-slate-700 font-medium text-sm text-center active:bg-slate-50">🗺 동선 한눈에 보기</a>
+    </div>
+    <div id="recoSection" class="hidden mb-4">
+      <div id="recoTitle" class="text-xs text-slate-500 font-medium mb-2 px-1">✨ 가볼만한 곳</div>
+      <div id="recoList" class="flex gap-2 overflow-x-auto pb-1 no-scrollbar -mx-4 px-4"></div>
+    </div>
+    <div id="daysContainer" class="space-y-4"></div>
+    <div id="emptyTrip" class="hidden text-center py-12">
+      <div class="text-5xl">📋</div>
+      <p class="mt-3 text-slate-500 font-medium">아직 일정이 비어있어요</p>
+      <p class="text-slate-400 text-sm mt-1">위에서 첫 일정을 더해볼까요?</p>
+    </div>
+    <div class="mt-6 grid grid-cols-2 gap-2">
+      <button class="py-3 rounded-2xl bg-white border border-slate-200 text-slate-400 text-sm" disabled>📷 사진 (곧)</button>
+      <button class="py-3 rounded-2xl bg-white border border-slate-200 text-slate-400 text-sm" disabled>🎬 쇼츠 (곧)</button>
+    </div>
+  </main>
+
+  <!-- Item sheet -->
+  <div id="sheetBackdrop" class="hidden fixed inset-0 bg-black/40 z-20 backdrop-enter"></div>
+  <div id="sheet" class="hidden fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md bg-white rounded-t-3xl z-30 max-h-[92vh] overflow-y-auto sheet-enter shadow-2xl">
+    <div class="sticky top-0 bg-white px-5 pt-3 pb-2 border-b border-slate-100 z-10">
+      <div class="w-10 h-1 bg-slate-300 rounded-full mx-auto"></div>
+      <div class="flex items-center justify-between mt-3">
+        <h2 id="sheetTitle" class="text-lg font-bold">일정 추가</h2>
+        <button id="sheetCloseBtn" class="text-slate-400 text-2xl leading-none w-8 h-8 flex items-center justify-center">×</button>
+      </div>
+    </div>
+    <form id="sheetForm" class="p-5 space-y-4">
+      <div id="daySection">
+        <label class="text-xs text-slate-500 font-medium">어느 날?</label>
+        <div id="dayPicker" class="mt-2 flex gap-2 overflow-x-auto pb-1 no-scrollbar -mx-5 px-5"></div>
+      </div>
+
+      <div>
+        <label class="text-xs text-slate-500 font-medium">어떤 일정?</label>
+        <div id="categoryPicker" class="mt-2 grid grid-cols-4 gap-2"></div>
+      </div>
+
+      <div>
+        <label class="text-xs text-slate-500 font-medium">어디로 가요?</label>
+        <input id="f_title" type="text" placeholder="예: 성산일출봉" class="mt-1 w-full px-4 py-3 bg-slate-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-400" />
+      </div>
+
+      <div>
+        <label class="text-xs text-slate-500 font-medium">몇 시쯤? (선택)</label>
+        <input id="f_time" type="time" class="mt-1 w-full px-4 py-3 bg-slate-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-400" />
+      </div>
+
+      <div>
+        <label class="text-xs text-slate-500 font-medium">위치 찍기</label>
+        <div class="mt-1 bg-slate-100 rounded-xl p-3">
+          <div id="f_locText" class="text-sm text-slate-500">아직 위치가 없어요</div>
+          <div class="mt-2 flex gap-2">
+            <button type="button" id="openMapBtn" class="flex-1 py-2 rounded-lg bg-sky-500 text-white text-sm font-medium active:bg-sky-600">🗺 지도에서 찍어보기</button>
+            <button type="button" id="clearLocBtn" class="hidden py-2 px-3 rounded-lg bg-white border border-slate-200 text-slate-500 text-sm active:bg-slate-50">지우기</button>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <label class="text-xs text-slate-500 font-medium">여기서 뭐 할 거예요?</label>
+        <textarea id="f_desc" rows="2" placeholder="예: 일출 보기, 인증샷" class="mt-1 w-full px-4 py-3 bg-slate-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-400 resize-none"></textarea>
+      </div>
+
+      <div>
+        <label class="text-xs text-slate-500 font-medium">어떻게 이동해요?</label>
+        <div id="transportPicker" class="mt-2 grid grid-cols-4 gap-2"></div>
+        <input id="f_transportDetail" type="text" placeholder="예: 30분 / 환승 1회" class="mt-2 w-full px-4 py-3 bg-slate-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-400" />
+      </div>
+
+      <div>
+        <label class="text-xs text-slate-500 font-medium">얼마 들었어요? (원)</label>
+        <div class="mt-2 grid grid-cols-2 gap-2">
+          <div class="bg-slate-100 rounded-xl px-3 py-2">
+            <div class="text-[11px] text-slate-500">🎫 입장료</div>
+            <input id="f_costEntry" type="number" inputmode="numeric" min="0" placeholder="0" class="w-full bg-transparent focus:outline-none mt-0.5 font-medium" />
+          </div>
+          <div class="bg-slate-100 rounded-xl px-3 py-2">
+            <div class="text-[11px] text-slate-500">🍽 음식값</div>
+            <input id="f_costFood" type="number" inputmode="numeric" min="0" placeholder="0" class="w-full bg-transparent focus:outline-none mt-0.5 font-medium" />
+          </div>
+          <div class="bg-slate-100 rounded-xl px-3 py-2">
+            <div class="text-[11px] text-slate-500">🚗 교통비</div>
+            <input id="f_costTransport" type="number" inputmode="numeric" min="0" placeholder="0" class="w-full bg-transparent focus:outline-none mt-0.5 font-medium" />
+          </div>
+          <div class="bg-slate-100 rounded-xl px-3 py-2">
+            <div class="text-[11px] text-slate-500">✨ 기타</div>
+            <input id="f_costEtc" type="number" inputmode="numeric" min="0" placeholder="0" class="w-full bg-transparent focus:outline-none mt-0.5 font-medium" />
+          </div>
+        </div>
+        <div class="mt-2 text-right text-sm text-slate-600">합계 <span id="f_costSum" class="font-bold text-slate-800">₩0</span></div>
+      </div>
+
+      <div>
+        <label class="text-xs text-slate-500 font-medium">🧾 영수증 (선택)</label>
+        <div id="receiptsGrid" class="mt-2 grid grid-cols-3 gap-2"></div>
+        <label class="mt-2 block">
+          <input type="file" id="f_receiptInput" accept="image/*" multiple class="hidden" />
+          <span class="block w-full py-2.5 rounded-xl bg-slate-100 text-slate-600 text-sm font-medium text-center cursor-pointer active:bg-slate-200">📸 영수증 찍거나 사진 고르기</span>
+        </label>
+      </div>
+
+      <div>
+        <button id="f_petBtn" type="button" class="w-full py-3 rounded-xl flex items-center justify-center gap-2 font-medium text-sm bg-slate-100 text-slate-500 active:bg-slate-200">
+          <span class="text-lg">🐾</span>
+          <span id="f_petLabel">반려동물과 함께 갈 수 있어요 (탭해서 켜기)</span>
+        </button>
+      </div>
+
+      <div class="flex gap-2 pt-2 pb-2">
+        <button type="button" id="deleteBtn" class="hidden flex-1 py-3 rounded-xl bg-red-50 text-red-600 font-bold active:bg-red-100">지우기</button>
+        <button type="submit" class="flex-1 py-3 rounded-xl bg-sky-500 text-white font-bold active:bg-sky-600">저장</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Photo viewer -->
+  <div id="photoViewer" class="hidden fixed inset-0 bg-black z-[60] flex items-center justify-center">
+    <img id="photoViewerImg" class="max-w-full max-h-full" />
+    <button id="photoViewerClose" class="absolute top-6 right-6 w-10 h-10 rounded-full bg-white/20 backdrop-blur text-white text-2xl leading-none flex items-center justify-center">×</button>
+  </div>
+
+  <!-- Day edit popup -->
+  <div id="dayEditBackdrop" class="hidden fixed inset-0 bg-black/50 z-40"></div>
+  <div id="dayEditPopup" class="hidden fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-80 max-w-[90vw] bg-white rounded-2xl shadow-2xl p-5">
+    <h3 class="text-lg font-bold">📅 Day 정보 바꾸기</h3>
+    <div class="mt-3">
+      <label class="text-xs text-slate-500 font-medium">Day 이름</label>
+      <input id="dayEditLabel" type="text" placeholder="Day 1" class="mt-1 w-full px-4 py-2.5 bg-slate-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-400" />
+    </div>
+    <div class="mt-3">
+      <label class="text-xs text-slate-500 font-medium">날짜</label>
+      <input id="dayEditDate" type="date" class="mt-1 w-full px-4 py-2.5 bg-slate-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-400" />
+    </div>
+    <div class="mt-4 flex gap-2">
+      <button id="dayEditCancelBtn" type="button" class="flex-1 py-2.5 rounded-xl bg-slate-100 text-slate-600 font-medium active:bg-slate-200">취소</button>
+      <button id="dayEditOkBtn" type="button" class="flex-1 py-2.5 rounded-xl bg-sky-500 text-white font-bold active:bg-sky-600">좋아요</button>
+    </div>
+  </div>
+
+  <!-- Time popup -->
+  <div id="timeBackdrop" class="hidden fixed inset-0 bg-black/50 z-40 backdrop-enter"></div>
+  <div id="timePopup" class="hidden fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-80 max-w-[90vw] bg-white rounded-2xl shadow-2xl p-5">
+    <h3 class="text-lg font-bold">⏰ 몇 시에 갈까요?</h3>
+    <p class="text-sm text-slate-500 mt-1 truncate" id="timePopupTitle"></p>
+    <input id="timePopupInput" type="time" class="mt-4 w-full px-4 py-3 bg-slate-100 rounded-xl text-2xl font-bold text-center focus:outline-none focus:ring-2 focus:ring-sky-400" />
+    <p class="mt-2 text-[11px] text-slate-400 text-center">저장하면 시간 순서대로 정리해드려요</p>
+    <div class="mt-3 flex gap-2">
+      <button id="timeCancelBtn" type="button" class="flex-1 py-2.5 rounded-xl bg-slate-100 text-slate-600 font-medium active:bg-slate-200">취소</button>
+      <button id="timeOkBtn" type="button" class="flex-1 py-2.5 rounded-xl bg-sky-500 text-white font-bold active:bg-sky-600">좋아요</button>
+    </div>
+  </div>
+
+  <!-- Settings sheet -->
+  <div id="settingsBackdrop" class="hidden fixed inset-0 bg-black/40 z-20 backdrop-enter"></div>
+  <div id="settingsSheet" class="hidden fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md bg-white rounded-t-3xl z-30 max-h-[92vh] overflow-y-auto sheet-enter shadow-2xl">
+    <div class="sticky top-0 bg-white px-5 pt-3 pb-2 border-b border-slate-100 z-10">
+      <div class="w-10 h-1 bg-slate-300 rounded-full mx-auto"></div>
+      <div class="flex items-center justify-between mt-3">
+        <h2 class="text-lg font-bold">여행 설정 ⚙️</h2>
+        <button id="settingsCloseBtn" class="text-slate-400 text-2xl leading-none w-8 h-8 flex items-center justify-center">×</button>
+      </div>
+    </div>
+    <div class="p-5 space-y-5">
+      <div>
+        <label class="text-xs text-slate-500 font-medium">표지 분위기</label>
+        <div id="themePicker" class="mt-2 grid grid-cols-4 gap-2"></div>
+      </div>
+      <div>
+        <label class="text-xs text-slate-500 font-medium">여행 날짜</label>
+        <div class="mt-1 grid grid-cols-2 gap-2">
+          <div>
+            <div class="text-[11px] text-slate-400 mb-0.5">언제 떠나요?</div>
+            <input id="settingsStart" type="date" class="w-full px-3 py-2.5 bg-slate-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-400" />
+          </div>
+          <div>
+            <div class="text-[11px] text-slate-400 mb-0.5">언제 돌아와요?</div>
+            <input id="settingsEnd" type="date" class="w-full px-3 py-2.5 bg-slate-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-400" />
+          </div>
+        </div>
+      </div>
+      <div>
+        <label class="text-xs text-slate-500 font-medium">어디로 가나요?</label>
+        <div id="settingsScopePicker" class="mt-2 grid grid-cols-2 gap-2"></div>
+        <input id="settingsRegion" type="text" placeholder="예: 제주도, 도쿄, 발리" class="mt-2 w-full px-4 py-3 bg-slate-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-400" />
+      </div>
+      <div>
+        <label class="text-xs text-slate-500 font-medium">반려동물과 함께 해요</label>
+        <button id="settingsPetBtn" type="button" class="mt-2 w-full py-3 rounded-xl flex items-center justify-center gap-2 font-medium text-sm bg-slate-100 text-slate-500 active:bg-slate-200">
+          <span class="text-lg">🐾</span>
+          <span id="settingsPetLabel">반려동물 없이 가요 (탭해서 바꿔요)</span>
+        </button>
+      </div>
+      <div>
+        <label class="text-xs text-slate-500 font-medium">함께 가는 사람</label>
+        <div id="settingsCompanionPicker" class="mt-2 grid grid-cols-4 gap-2"></div>
+        <div class="mt-2">
+          <label class="text-xs text-slate-500">총 몇 명 (본인 포함)</label>
+          <div class="mt-1 flex items-center gap-2">
+            <button type="button" id="settingsCount_dec" class="w-12 h-12 rounded-xl bg-slate-100 text-2xl font-bold text-slate-600 active:bg-slate-200 shrink-0">−</button>
+            <input id="settingsCount" type="number" inputmode="numeric" min="1" class="flex-1 min-w-0 px-4 py-3 bg-slate-100 rounded-xl text-center text-lg font-bold focus:outline-none focus:ring-2 focus:ring-sky-400" />
+            <button type="button" id="settingsCount_inc" class="w-12 h-12 rounded-xl bg-slate-100 text-2xl font-bold text-slate-600 active:bg-slate-200 shrink-0">+</button>
+          </div>
+        </div>
+      </div>
+      <button id="deleteTripBtn" class="w-full py-3 rounded-xl bg-red-50 text-red-600 font-bold active:bg-red-100">이 여행 지우기</button>
+    </div>
+  </div>
+
+  <!-- Map fullscreen sheet -->
+  <div id="mapSheet" class="hidden fixed inset-0 z-40 bg-white flex flex-col">
+    <div class="px-3 py-3 border-b border-slate-100 flex items-center gap-2 shrink-0">
+      <button id="mapBackBtn" class="text-slate-500 text-2xl leading-none w-9 h-9 flex items-center justify-center active:bg-slate-100 rounded-lg">‹</button>
+      <input id="mapSearch" type="text" placeholder="어디 찾아드릴까요? (예: 성산일출봉)" class="flex-1 px-3 py-2 bg-slate-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-400 text-sm" />
+      <button id="mapSearchBtn" class="px-3 py-2 rounded-xl bg-sky-500 text-white text-sm font-medium active:bg-sky-600">검색</button>
+    </div>
+    <div id="mapResults" class="hidden border-b border-slate-100 max-h-48 overflow-y-auto shrink-0 bg-white"></div>
+    <div class="flex-1 min-h-0 relative">
+      <div id="mapEl" class="absolute inset-0"></div>
+      <div class="absolute top-2 left-1/2 -translate-x-1/2 px-3 py-1.5 rounded-full bg-white/90 text-slate-600 text-[11px] shadow pointer-events-none">지도를 탭해서 위치를 찍어주세요</div>
+    </div>
+    <div class="border-t border-slate-100 shrink-0 p-3 flex items-center gap-2">
+      <div class="flex-1 text-xs text-slate-600 leading-snug" id="mapAddress">아직 위치가 없어요</div>
+      <button id="mapConfirmBtn" disabled class="px-4 py-2 rounded-xl bg-sky-500 text-white text-sm font-bold disabled:bg-slate-300 disabled:cursor-not-allowed active:bg-sky-600">이걸로 할게요</button>
+    </div>
+  </div>
+
+  <script>
+  // ---------------- Constants ----------------
+  const STORAGE_KEY = 'travel-planner-v2';
+  const CATEGORIES = [
+    { id: 'sight', label: '관광', emoji: '🏝️', chip: 'bg-sky-100 text-sky-700' },
+    { id: 'food',  label: '맛집', emoji: '🍜', chip: 'bg-orange-100 text-orange-700' },
+    { id: 'move',  label: '이동', emoji: '🚗', chip: 'bg-slate-200 text-slate-700', hidden: true },
+    { id: 'stay',  label: '숙소', emoji: '🏨', chip: 'bg-purple-100 text-purple-700' },
+    { id: 'etc',   label: '기타', emoji: '✨', chip: 'bg-amber-100 text-amber-700' },
+  ];
+  const TRANSPORT_MODES = [
+    { id: 'car',    emoji: '🚗', label: '자차' },
+    { id: 'subway', emoji: '🚇', label: '지하철' },
+    { id: 'bus',    emoji: '🚌', label: '버스' },
+    { id: 'flight', emoji: '✈️', label: '비행기' },
+    { id: 'walk',   emoji: '🚶', label: '도보' },
+    { id: 'taxi',   emoji: '🚕', label: '택시' },
+    { id: 'ferry',  emoji: '🚢', label: '배' },
+    { id: 'etc',    emoji: '❓', label: '기타' },
+  ];
+  const COST_BUCKETS = [
+    { id: 'Entry',     emoji: '🎫', label: '입장료' },
+    { id: 'Food',      emoji: '🍽', label: '음식값' },
+    { id: 'Transport', emoji: '🚗', label: '교통비' },
+    { id: 'Etc',       emoji: '✨', label: '기타' },
+  ];
+  const COVER_THEMES = [
+    { id: 'ocean',  emoji: '🏝️', gradient: 'from-sky-400 to-cyan-400' },
+    { id: 'forest', emoji: '🏔️', gradient: 'from-emerald-400 to-teal-500' },
+    { id: 'city',   emoji: '🌆', gradient: 'from-fuchsia-400 to-purple-500' },
+    { id: 'temple', emoji: '⛩️', gradient: 'from-amber-400 to-orange-500' },
+    { id: 'sunset', emoji: '🌅', gradient: 'from-orange-400 to-rose-500' },
+    { id: 'snow',   emoji: '❄️', gradient: 'from-slate-300 to-sky-500' },
+    { id: 'desert', emoji: '🏜️', gradient: 'from-yellow-400 to-orange-600' },
+    { id: 'night',  emoji: '🌃', gradient: 'from-indigo-500 to-slate-800' },
+  ];
+  const COMPANION_TYPES = [
+    { id: 'family',  emoji: '👨‍👩‍👧', label: '가족' },
+    { id: 'couple',  emoji: '💑', label: '연인' },
+    { id: 'friends', emoji: '🧑‍🤝‍🧑', label: '친구' },
+    { id: 'etc',     emoji: '✨', label: '기타' },
+  ];
+  const REGION_SCOPES = [
+    { id: 'domestic',      emoji: '🏠', label: '국내' },
+    { id: 'international', emoji: '🌏', label: '국외' },
+  ];
+  const getCompanion = (id) => COMPANION_TYPES.find(c => c.id === id);
+  const getScope = (id) => REGION_SCOPES.find(s => s.id === id);
+  function companionText(comp) {
+    if (!comp) return '';
+    const t = getCompanion(comp.type);
+    if (!t && (!comp.count || comp.count <= 1)) return '';
+    const left = t ? `${t.emoji} ${t.label}` : '👥';
+    return comp.count > 1 ? `${left} ${comp.count}명` : left;
+  }
+  function regionText(region) {
+    if (!region) return '';
+    const s = getScope(region.scope);
+    if (region.name) return `${s?.emoji || '📍'} ${region.name}`;
+    if (s) return `${s.emoji} ${s.label}`;
+    return '';
+  }
+
+  const RECOMMENDATIONS = {
+    '제주도': [
+      { category: 'sight', title: '성산일출봉', emoji: '🌅', desc: '일출 명소·화산섬 봉우리', petFriendly: false, location: { lat: 33.4588891, lng: 126.9408178, address: '제주특별자치도 서귀포시 성산읍 일출로 284-12' }},
+      { category: 'sight', title: '한라산 영실코스', emoji: '⛰️', desc: '윗세오름 트레킹 4~5h', petFriendly: false },
+      { category: 'sight', title: '협재해수욕장', emoji: '🏖', desc: '에메랄드빛 바다, 비양도 뷰', petFriendly: true, location: { lat: 33.3940, lng: 126.2400 }},
+      { category: 'sight', title: '섭지코지', emoji: '🌊', desc: '드넓은 해안 산책로', petFriendly: true },
+      { category: 'food',  title: '올레국수', emoji: '🍜', desc: '제주 고기국수 맛집', petFriendly: false },
+      { category: 'sight', title: '카멜리아힐', emoji: '🌺', desc: '동백·계절꽃 정원', petFriendly: true },
+      { category: 'sight', title: '용두암', emoji: '🪨', desc: '용 모양 해안 바위', petFriendly: true },
+    ],
+    '서울': [
+      { category: 'sight', title: '경복궁', emoji: '🏯', desc: '수문장 교대식', petFriendly: false, location: { lat: 37.5796, lng: 126.9770 }},
+      { category: 'sight', title: '북촌한옥마을', emoji: '🏘', desc: '한옥 거리 산책', petFriendly: true },
+      { category: 'sight', title: 'N서울타워', emoji: '🗼', desc: '남산 야경', petFriendly: false },
+      { category: 'sight', title: '한강공원', emoji: '🌉', desc: '치맥·자전거·피크닉', petFriendly: true },
+      { category: 'food',  title: '광장시장', emoji: '🍢', desc: '빈대떡·마약김밥', petFriendly: false },
+      { category: 'sight', title: '서울숲', emoji: '🌳', desc: '도심 속 산책 명소', petFriendly: true },
+    ],
+    '부산': [
+      { category: 'sight', title: '해운대 해수욕장', emoji: '🏖', desc: '부산 대표 해변', petFriendly: true, location: { lat: 35.1587, lng: 129.1604 }},
+      { category: 'sight', title: '감천문화마을', emoji: '🎨', desc: '컬러풀 산비탈 마을', petFriendly: true },
+      { category: 'sight', title: '광안리 해변', emoji: '🌃', desc: '광안대교 야경', petFriendly: true },
+      { category: 'food',  title: '자갈치시장', emoji: '🦑', desc: '해산물 회·찜', petFriendly: false },
+      { category: 'sight', title: '태종대', emoji: '🌊', desc: '해안 절경 다누비열차', petFriendly: true },
+    ],
+    '강릉': [
+      { category: 'sight', title: '경포해변', emoji: '🏖', desc: '일출 명소', petFriendly: true },
+      { category: 'sight', title: '안목해변', emoji: '☕', desc: '커피거리', petFriendly: true },
+      { category: 'food',  title: '초당두부마을', emoji: '🥣', desc: '명물 초당순두부', petFriendly: false },
+      { category: 'sight', title: '주문진항', emoji: '🦞', desc: '동해 활어회', petFriendly: true },
+    ],
+    '도쿄': [
+      { category: 'sight', title: '아사쿠사 센소지', emoji: '⛩', desc: '도쿄 최고(最古) 사찰', petFriendly: false, location: { lat: 35.7148, lng: 139.7967 }},
+      { category: 'sight', title: '시부야 스크램블', emoji: '🚦', desc: '세계 최대 교차로', petFriendly: false },
+      { category: 'sight', title: '도쿄 타워', emoji: '🗼', desc: '도쿄 야경', petFriendly: false, location: { lat: 35.6586, lng: 139.7454 }},
+      { category: 'food',  title: '이치란 라멘', emoji: '🍜', desc: '돈코츠 라멘', petFriendly: false },
+      { category: 'sight', title: '메이지 진구', emoji: '🌳', desc: '도심 속 신사·숲', petFriendly: false },
+      { category: 'sight', title: '오다이바', emoji: '🌉', desc: '레인보우 브릿지 야경', petFriendly: true },
+    ],
+    '오사카': [
+      { category: 'sight', title: '오사카성', emoji: '🏯', desc: '오사카 상징 천수각', petFriendly: false, location: { lat: 34.6873, lng: 135.5262 }},
+      { category: 'sight', title: '도톤보리', emoji: '🌃', desc: '글리코맨·먹자골목', petFriendly: false },
+      { category: 'food',  title: '타코야키 와나카', emoji: '🐙', desc: '오사카 명물', petFriendly: false },
+      { category: 'food',  title: '오코노미야키 미즈노', emoji: '🍳', desc: '간사이식 부침개 노포', petFriendly: false },
+      { category: 'sight', title: '유니버설 스튜디오', emoji: '🎢', desc: '하루 종일 테마파크', petFriendly: false },
+    ],
+  };
+  const RECO_ALIASES = { 'jeju':'제주도', '제주':'제주도', 'seoul':'서울', 'busan':'부산', 'gangneung':'강릉', 'tokyo':'도쿄', 'osaka':'오사카' };
+  function getRecommendations(region) {
+    if (!region?.name) return [];
+    const name = String(region.name).trim().toLowerCase();
+    for (const key in RECOMMENDATIONS) {
+      const k = key.toLowerCase();
+      if (name === k || name.includes(k) || k.includes(name)) return RECOMMENDATIONS[key];
+    }
+    for (const alias in RECO_ALIASES) {
+      if (name.includes(alias)) return RECOMMENDATIONS[RECO_ALIASES[alias]];
+    }
+    return [];
+  }
+
+  // ---------------- Helpers ----------------
+  const uid = () => Math.random().toString(36).slice(2, 10);
+
+  // ---------------- Photo storage (IndexedDB) ----------------
+  let _dbPromise = null;
+  function getPhotoDB() {
+    if (!_dbPromise) {
+      _dbPromise = new Promise((resolve, reject) => {
+        const req = indexedDB.open('travel-planner-photos', 1);
+        req.onupgradeneeded = () => { req.result.createObjectStore('photos'); };
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+      });
+    }
+    return _dbPromise;
+  }
+  async function savePhoto(id, blob) {
+    const db = await getPhotoDB();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction('photos', 'readwrite');
+      tx.objectStore('photos').put(blob, id);
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+  }
+  async function loadPhoto(id) {
+    const db = await getPhotoDB();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction('photos', 'readonly');
+      const req = tx.objectStore('photos').get(id);
+      req.onsuccess = () => resolve(req.result || null);
+      req.onerror = () => reject(req.error);
+    });
+  }
+  async function deletePhoto(id) {
+    try {
+      const db = await getPhotoDB();
+      return new Promise((resolve) => {
+        const tx = db.transaction('photos', 'readwrite');
+        tx.objectStore('photos').delete(id);
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => resolve();
+      });
+    } catch { /* ignore */ }
+  }
+  function compressImage(file, maxWidth = 1200, quality = 0.75) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const img = new Image();
+        img.onload = () => {
+          const scale = Math.min(1, maxWidth / img.width);
+          const w = Math.round(img.width * scale);
+          const h = Math.round(img.height * scale);
+          const canvas = document.createElement('canvas');
+          canvas.width = w; canvas.height = h;
+          canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+          canvas.toBlob(b => b ? resolve(b) : reject(new Error('compress failed')), 'image/jpeg', quality);
+        };
+        img.onerror = reject;
+        img.src = reader.result;
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+  const getCat = (id) => CATEGORIES.find(c => c.id === id) || CATEGORIES[4];
+  const getMode = (id) => TRANSPORT_MODES.find(m => m.id === id);
+  const getTheme = (id) => COVER_THEMES.find(t => t.id === id) || COVER_THEMES[0];
+  const escapeHtml = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const itemCost = (it) => Number(it.costEntry||0) + Number(it.costFood||0) + Number(it.costTransport||0) + Number(it.costEtc||0);
+  const heartSvg = (filled) => `<svg viewBox="0 0 24 24" width="20" height="20" fill="${filled?'#ef4444':'none'}" stroke="${filled?'#ef4444':'#cbd5e1'}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>`;
+  let toastTimer;
+  function toast(msg) {
+    let el = document.getElementById('toast');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'toast';
+      el.className = 'fixed top-24 left-1/2 -translate-x-1/2 bg-slate-900/85 text-white text-sm px-4 py-2 rounded-full shadow-lg z-50 pointer-events-none transition-opacity duration-300';
+      document.body.appendChild(el);
+    }
+    el.textContent = msg;
+    el.style.opacity = '1';
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => { el.style.opacity = '0'; }, 1500);
+  }
+
+  function detectTransportMode(text) {
+    const t = String(text || '');
+    if (/렌터카|자가용|자차|승용차/i.test(t)) return 'car';
+    if (/지하철|전철|메트로|호선/i.test(t)) return 'subway';
+    if (/버스/.test(t)) return 'bus';
+    if (/비행기|항공|flight/i.test(t)) return 'flight';
+    if (/도보|걷|walk/i.test(t)) return 'walk';
+    if (/택시|taxi/i.test(t)) return 'taxi';
+    if (/배|페리|선박|cruise|ferry/i.test(t)) return 'ferry';
+    return '';
+  }
+
+  function migrateItem(it) {
+    if (it.transport !== undefined && it.transportDetail === undefined) {
+      const t = String(it.transport);
+      it.transportDetail = t;
+      it.transportMode = detectTransportMode(t);
+      delete it.transport;
+    }
+    if (it.cost !== undefined && it.costEntry === undefined) {
+      const c = Number(it.cost) || 0;
+      it.costEntry = 0; it.costFood = 0; it.costTransport = 0; it.costEtc = 0;
+      if (it.category === 'sight') it.costEntry = c;
+      else if (it.category === 'food') it.costFood = c;
+      else if (it.category === 'move') it.costTransport = c;
+      else it.costEtc = c;
+      delete it.cost;
+    }
+    if (it.costEntry === undefined)     it.costEntry = 0;
+    if (it.costFood === undefined)      it.costFood = 0;
+    if (it.costTransport === undefined) it.costTransport = 0;
+    if (it.costEtc === undefined)       it.costEtc = 0;
+    if (it.transportMode === undefined)   it.transportMode = '';
+    if (it.transportDetail === undefined) it.transportDetail = '';
+    if (it.location === undefined)        it.location = null;
+    if (it.favorite === undefined)        it.favorite = false;
+    if (it.favoritedAt === undefined)     it.favoritedAt = null;
+    if (it.petFriendly === undefined)     it.petFriendly = false;
+    if (!Array.isArray(it.receipts))      it.receipts = [];
+    // Strip the mode keyword from detail when both carry the same word
+    if (!it._cleanedDetail && it.transportMode && it.transportDetail) {
+      const reMap = { car:/렌터카|자가용|자차|승용차/i, subway:/지하철|전철|메트로|호선/i, bus:/버스/, flight:/비행기|항공|flight/i, walk:/도보|걷기|walk/i, taxi:/택시|taxi/i, ferry:/배|페리|선박|cruise|ferry/i };
+      const re = reMap[it.transportMode];
+      if (re) it.transportDetail = it.transportDetail.replace(re, '').replace(/^[\s,·.\-]+|[\s,·.\-]+$/g, '').trim();
+      it._cleanedDetail = true;
+    }
+    return it;
+  }
+
+  function loadState() {
+    let st = null;
+    try {
+      const v2 = localStorage.getItem(STORAGE_KEY);
+      if (v2) st = JSON.parse(v2);
+    } catch {}
+    if (!st) {
+      try {
+        const v1 = localStorage.getItem('travel-planner-v1');
+        if (v1) {
+          const old = JSON.parse(v1);
+          const m = String(old.tripDates || '').match(/(20\d{2})\D?(\d{1,2})\D?(\d{1,2})/);
+          const startDate = m ? `${m[1]}-${m[2].padStart(2,'0')}-${m[3].padStart(2,'0')}` : '';
+          st = { trips: [{
+            id: uid(), title: old.tripTitle || '여행', dates: old.tripDates || '', startDate,
+            cover: { theme: 'ocean' }, days: old.days || [], createdAt: Date.now(),
+          }] };
+          localStorage.removeItem('travel-planner-v1');
+        }
+      } catch {}
+    }
+    if (!st) st = { trips: [] };
+    // migrate all items
+    st.trips.forEach(tr => tr.days?.forEach(d => d.items?.forEach(migrateItem)));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(st));
+    return st;
+  }
+  const save = () => localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+
+  // ---------------- Time helpers ----------------
+  function toMin(t) { if (!t) return null; const [h,m] = t.split(':').map(Number); return h*60+m; }
+  function toHM(m) { m = Math.max(0, Math.min(23*60+59, Math.round(m))); return `${String(Math.floor(m/60)).padStart(2,'0')}:${String(m%60).padStart(2,'0')}`; }
+  function midTime(a, b) { return toHM((toMin(a) + toMin(b)) / 2); }
+  function addMin(t, delta) { return toHM(toMin(t) + delta); }
+  function suggestTime(prevT, nextT, currentT) {
+    if (prevT && nextT) return midTime(prevT, nextT);
+    if (prevT) return addMin(prevT, 60);
+    if (nextT) return addMin(nextT, -60);
+    return currentT || '12:00';
+  }
+  function sortDayByTime(day) {
+    day.items.sort((a, b) => {
+      const av = a.time || '99:99', bv = b.time || '99:99';
+      return av.localeCompare(bv);
+    });
+  }
+  let timePopupCb = null;
+  function openTimePopup(item, suggestedTime, onClose) {
+    document.getElementById('timePopupTitle').textContent = item.title || '일정';
+    document.getElementById('timePopupInput').value = suggestedTime;
+    document.getElementById('timeBackdrop').classList.remove('hidden');
+    document.getElementById('timePopup').classList.remove('hidden');
+    timePopupCb = (saved) => {
+      if (saved) item.time = document.getElementById('timePopupInput').value;
+      document.getElementById('timeBackdrop').classList.add('hidden');
+      document.getElementById('timePopup').classList.add('hidden');
+      timePopupCb = null;
+      if (onClose) onClose();
+    };
+  }
+
+  // ---------------- Init ----------------
+  const params = new URLSearchParams(location.search);
+  const tripId = params.get('id');
+  let state = loadState();
+  let trip = tripId ? state.trips.find(t => t.id === tripId) : null;
+  if (!trip) { location.replace('index.html'); throw new Error('no trip'); }
+
+  let editing = null;
+  let tempLocation = null;
+  let tempTransportMode = '';
+  let tempPetFriendly = false;
+  let tempReceipts = [];
+  let originalReceipts = [];
+  let selectedDayId = null;
+  let contextDayId = null;
+  const PENDING_NEW_DAY = '__new__';
+
+  // ---------------- Theme ----------------
+  function applyTheme() {
+    const theme = getTheme(trip.cover?.theme);
+    document.getElementById('appHeader').className = `text-white px-5 pt-10 pb-5 shadow-lg bg-gradient-to-br ${theme.gradient}`;
+    document.getElementById('coverEmojiBtn').textContent = theme.emoji;
+    document.querySelector('meta[name="theme-color"]').setAttribute('content',
+      ({ ocean:'#0ea5e9', forest:'#10b981', city:'#a855f7', temple:'#f59e0b', sunset:'#fb7185', snow:'#7dd3fc', desert:'#ea580c', night:'#4f46e5' })[theme.id] || '#0ea5e9'
+    );
+  }
+
+  // ---------------- Render ----------------
+  function render() {
+    applyTheme();
+    document.getElementById('tripTitle').value = trip.title || '';
+    document.getElementById('tripDatesText').textContent = trip.dates || '날짜를 입력하세요';
+    document.getElementById('settleLink').href = `settle.html?id=${trip.id}`;
+
+    const container = document.getElementById('daysContainer');
+    container.innerHTML = '';
+
+    let total = 0, items = 0;
+    const buckets = { Entry: 0, Food: 0, Transport: 0, Etc: 0 };
+
+    trip.days.forEach(day => {
+      items += day.items.length;
+      day.items.forEach(it => {
+        total += itemCost(it);
+        buckets.Entry     += Number(it.costEntry||0);
+        buckets.Food      += Number(it.costFood||0);
+        buckets.Transport += Number(it.costTransport||0);
+        buckets.Etc       += Number(it.costEtc||0);
+      });
+
+      const dayEl = document.createElement('section');
+      dayEl.className = 'bg-white rounded-2xl shadow-sm overflow-hidden';
+      dayEl.dataset.dayId = day.id;
+      dayEl.innerHTML = `
+        <header class="flex items-center justify-between px-4 py-3 border-b border-slate-100">
+          <div class="flex items-center gap-2 min-w-0">
+            <span class="text-sm font-bold text-sky-600 shrink-0">${escapeHtml(day.label)}</span>
+            <span class="text-xs text-slate-500 truncate">${escapeHtml(day.date)}</span>
+          </div>
+          <div class="flex items-center gap-1 shrink-0">
+            <button class="day-edit-btn p-2 text-slate-400 active:text-slate-600" data-day-id="${day.id}" title="편집">✎</button>
+            <button class="day-del-btn p-2 text-slate-400 active:text-red-500" data-day-id="${day.id}" title="삭제">🗑</button>
+          </div>
+        </header>
+        <div class="items-list p-3 space-y-2 min-h-[56px]" data-day-id="${day.id}"></div>
+        <button class="add-item-btn w-full py-3 border-t border-slate-100 text-sm text-sky-600 font-medium active:bg-sky-50" data-day-id="${day.id}">+ 일정 추가</button>
+      `;
+      const itemsList = dayEl.querySelector('.items-list');
+      day.items.forEach(item => itemsList.appendChild(renderItem(item, day.id)));
+      container.appendChild(dayEl);
+    });
+
+    document.getElementById('totalSpend').textContent = '₩' + total.toLocaleString();
+    document.getElementById('totalCount').textContent = items + '개';
+    document.getElementById('totalDays').textContent = trip.days.length + '일';
+    document.getElementById('emptyTrip').classList.toggle('hidden', trip.days.length > 0);
+
+    const parts = COST_BUCKETS
+      .filter(b => buckets[b.id] > 0)
+      .map(b => `${b.emoji} ${buckets[b.id].toLocaleString()}`);
+    document.getElementById('costBreakdown').textContent = parts.length ? parts.join('  ·  ') : '';
+
+    // companion chip
+    const cBtn = document.getElementById('companionBtn');
+    const cTxt = companionText(trip.companion);
+    if (cTxt) { cBtn.textContent = cTxt; cBtn.classList.remove('hidden'); }
+    else cBtn.classList.add('hidden');
+
+    // region chip
+    const rBtn = document.getElementById('regionBtn');
+    const rTxt = regionText(trip.region);
+    if (rTxt) { rBtn.textContent = rTxt; rBtn.classList.remove('hidden'); }
+    else rBtn.classList.add('hidden');
+
+    // pet chip
+    document.getElementById('petBtn').classList.toggle('hidden', !trip.withPet);
+
+    // route link — only when at least one item has a location
+    const hasAnyLocation = trip.days.some(d => d.items.some(i => i.location?.lat));
+    const routeLink = document.getElementById('routeLink');
+    routeLink.classList.toggle('hidden', !hasAnyLocation);
+    routeLink.href = `route.html?id=${trip.id}`;
+
+    renderRecommendations();
+
+    document.querySelectorAll('.items-list').forEach(list => {
+      Sortable.create(list, { group:'items', handle:'.drag-handle', animation:180,
+        ghostClass:'sortable-ghost', chosenClass:'sortable-chosen', dragClass:'sortable-drag',
+        onEnd: handleSortEnd });
+    });
+    document.querySelectorAll('.add-item-btn').forEach(btn => { btn.onclick = () => openSheet(btn.dataset.dayId, null); });
+    document.querySelectorAll('.day-del-btn').forEach(btn => {
+      btn.onclick = () => {
+        if (trip.days.length <= 1) { alert('마지막 Day는 지울 수 없어요'); return; }
+        if (confirm('이 Day를 지울까요? 안의 일정도 함께 사라져요')) {
+          trip.days = trip.days.filter(d => d.id !== btn.dataset.dayId);
+          save(); render();
+        }
+      };
+    });
+    document.querySelectorAll('.day-edit-btn').forEach(btn => { btn.onclick = () => openDayEdit(btn.dataset.dayId); });
+  }
+
+  function renderItem(item, dayId) {
+    const cat = getCat(item.category);
+    const mode = item.transportMode ? getMode(item.transportMode) : null;
+    const cost = itemCost(item);
+    const el = document.createElement('div');
+    el.className = 'flex items-stretch bg-slate-50 rounded-xl overflow-hidden';
+    el.dataset.itemId = item.id;
+    el.innerHTML = `
+      <div class="drag-handle flex items-center px-1.5 text-slate-300 select-none">
+        <svg width="14" height="22" viewBox="0 0 14 22" fill="currentColor" aria-hidden="true">
+          <circle cx="4" cy="5" r="1.5"/><circle cx="10" cy="5" r="1.5"/>
+          <circle cx="4" cy="11" r="1.5"/><circle cx="10" cy="11" r="1.5"/>
+          <circle cx="4" cy="17" r="1.5"/><circle cx="10" cy="17" r="1.5"/>
+        </svg>
+      </div>
+      <button class="time-btn flex flex-col items-center justify-center min-w-[64px] px-1 py-3 border-r border-slate-200/70 active:bg-slate-100" title="시간 변경">
+        ${item.time
+          ? `<div class="text-lg font-extrabold text-sky-600 leading-tight tabular-nums">${escapeHtml(item.time)}</div>`
+          : `<div class="text-[11px] text-slate-400 leading-tight text-center">시간<br/>찍기</div>`}
+      </button>
+      <button class="item-tap flex-1 text-left px-3 py-3 active:bg-slate-100">
+        <div class="flex items-center gap-1.5 flex-wrap">
+          <span class="text-[11px] px-2 py-0.5 rounded-full ${cat.chip} font-medium leading-tight">${cat.emoji} ${cat.label}</span>
+          ${item.petFriendly ? `<span class="text-[11px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 font-medium leading-tight">🐾</span>` : ''}
+        </div>
+        <div class="mt-1 font-semibold text-slate-800 break-words">${escapeHtml(item.title || '(이름 없는 일정)')}</div>
+        ${item.desc ? `<div class="text-xs text-slate-500 mt-0.5 break-words">${escapeHtml(item.desc)}</div>` : ''}
+        ${item.location?.address ? `<div class="mt-1 text-xs text-slate-500 break-words"><span class="mr-1">📍</span>${escapeHtml(item.location.address)}</div>` : ''}
+        ${(mode || item.transportDetail) ? `
+          <div class="mt-1 text-xs text-slate-500 flex items-center gap-1.5 flex-wrap">
+            ${mode ? `<span>${mode.emoji} ${mode.label}</span>` : ''}
+            ${item.transportDetail ? `<span class="text-slate-400">${escapeHtml(item.transportDetail)}</span>` : ''}
+          </div>` : ''}
+        ${(cost || item.receipts?.length) ? `
+          <div class="mt-1.5 flex items-center gap-2 text-xs">
+            ${cost ? `<span class="font-medium text-slate-700">₩${cost.toLocaleString()}</span>` : ''}
+            ${item.receipts?.length ? `<span class="text-slate-500">🧾 ${item.receipts.length}</span>` : ''}
+          </div>` : ''}
+      </button>
+      <button class="fav-btn flex items-center px-3 active:bg-slate-100" title="즐겨찾기">${heartSvg(item.favorite)}</button>
+    `;
+    el.querySelector('.item-tap').onclick = () => openSheet(dayId, item.id);
+    el.querySelector('.time-btn').onclick = (e) => {
+      e.stopPropagation();
+      const day = trip.days.find(d => d.id === dayId);
+      const idx = day.items.indexOf(item);
+      const prev = idx > 0 ? day.items[idx - 1] : null;
+      const next = idx < day.items.length - 1 ? day.items[idx + 1] : null;
+      const suggested = item.time || suggestTime(prev?.time, next?.time);
+      openTimePopup(item, suggested, () => { sortDayByTime(day); save(); render(); });
+    };
+    el.querySelector('.fav-btn').onclick = (e) => {
+      e.stopPropagation();
+      item.favorite = !item.favorite;
+      item.favoritedAt = item.favorite ? Date.now() : null;
+      save();
+      el.querySelector('.fav-btn').innerHTML = heartSvg(item.favorite);
+      toast(item.favorite ? '❤️ 마음에 담았어요' : '마음에서 뺐어요');
+    };
+    return el;
+  }
+
+  function handleSortEnd(evt) {
+    const fromDay = trip.days.find(d => d.id === evt.from.dataset.dayId);
+    const toDay   = trip.days.find(d => d.id === evt.to.dataset.dayId);
+    if (!fromDay || !toDay) return;
+    const idx = fromDay.items.findIndex(i => i.id === evt.item.dataset.itemId);
+    if (idx === -1) return;
+    const [moved] = fromDay.items.splice(idx, 1);
+    toDay.items.splice(evt.newIndex, 0, moved);
+
+    const prev = evt.newIndex > 0 ? toDay.items[evt.newIndex - 1] : null;
+    const next = evt.newIndex < toDay.items.length - 1 ? toDay.items[evt.newIndex + 1] : null;
+    const suggested = suggestTime(prev?.time, next?.time, moved.time);
+    openTimePopup(moved, suggested, () => {
+      sortDayByTime(toDay);
+      if (fromDay !== toDay) sortDayByTime(fromDay);
+      save(); render();
+    });
+  }
+
+  // ---------------- Item sheet ----------------
+  function updateCostSum() {
+    const sum = ['Entry','Food','Transport','Etc'].reduce((s, k) =>
+      s + (Number(document.getElementById('f_cost'+k).value) || 0), 0);
+    document.getElementById('f_costSum').textContent = '₩' + sum.toLocaleString();
+  }
+  function renderTransportPicker() {
+    const picker = document.getElementById('transportPicker');
+    picker.innerHTML = '';
+    TRANSPORT_MODES.forEach(m => {
+      const b = document.createElement('button');
+      b.type = 'button'; b.dataset.mode = m.id;
+      const selected = tempTransportMode === m.id;
+      b.className = `py-2 rounded-xl text-[11px] font-medium bg-slate-100 ${selected ? 'ring-2 ring-sky-400 bg-sky-50' : 'opacity-70'} active:opacity-100`;
+      b.innerHTML = `<div class="text-lg leading-none">${m.emoji}</div><div class="mt-0.5">${m.label}</div>`;
+      b.onclick = () => {
+        tempTransportMode = (tempTransportMode === m.id) ? '' : m.id;
+        renderTransportPicker();
+      };
+      picker.appendChild(b);
+    });
+  }
+  function renderPetToggle() {
+    const btn = document.getElementById('f_petBtn');
+    const label = document.getElementById('f_petLabel');
+    if (tempPetFriendly) {
+      btn.className = 'w-full py-3 rounded-xl flex items-center justify-center gap-2 font-medium text-sm bg-emerald-100 text-emerald-700 ring-2 ring-emerald-300 active:bg-emerald-200';
+      label.textContent = '반려동물과 함께 갈 수 있어요';
+    } else {
+      btn.className = 'w-full py-3 rounded-xl flex items-center justify-center gap-2 font-medium text-sm bg-slate-100 text-slate-500 active:bg-slate-200';
+      label.textContent = '반려동물과 함께 갈 수 있어요 (탭해서 켜기)';
+    }
+  }
+
+  function renderRecommendations() {
+    const sec = document.getElementById('recoSection');
+    const list = document.getElementById('recoList');
+    const recos = getRecommendations(trip.region);
+    const existingTitles = new Set();
+    trip.days.forEach(d => d.items.forEach(it => existingTitles.add(it.title)));
+    const remaining = recos.filter(r => !existingTitles.has(r.title));
+    if (!remaining.length) { sec.classList.add('hidden'); return; }
+    sec.classList.remove('hidden');
+    document.getElementById('recoTitle').textContent = `✨ ${trip.region?.name || ''}에서 가볼만한 곳`;
+    const sorted = trip.withPet
+      ? [...remaining].sort((a, b) => (b.petFriendly ? 1 : 0) - (a.petFriendly ? 1 : 0))
+      : remaining;
+    list.innerHTML = '';
+    sorted.forEach(r => {
+      const card = document.createElement('button');
+      card.type = 'button';
+      card.className = 'shrink-0 w-36 bg-white rounded-2xl shadow-sm p-3 text-left active:scale-[0.98] transition';
+      card.innerHTML = `
+        <div class="flex items-start justify-between">
+          <div class="text-3xl leading-none">${r.emoji}</div>
+          ${r.petFriendly ? '<span class="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700 font-medium">🐾</span>' : ''}
+        </div>
+        <div class="mt-2 font-bold text-sm text-slate-800 truncate">${escapeHtml(r.title)}</div>
+        <div class="mt-0.5 text-[11px] text-slate-500 overflow-hidden" style="display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;min-height:28px;">${escapeHtml(r.desc || '')}</div>
+        <div class="mt-2 text-[11px] text-sky-600 font-medium">+ 일정에 담기</div>
+      `;
+      card.onclick = () => addRecommendation(r);
+      list.appendChild(card);
+    });
+  }
+
+  function addRecommendation(r) {
+    let targetDay = trip.days.length > 0 ? trip.days[trip.days.length - 1] : null;
+    if (!targetDay) {
+      targetDay = { id: uid(), label: 'Day 1', date: '', items: [] };
+      trip.days.push(targetDay);
+    }
+    targetDay.items.push({
+      id: uid(),
+      category: r.category, title: r.title, time: '', desc: r.desc || '',
+      transportMode: '', transportDetail: '',
+      location: r.location ? { ...r.location } : null,
+      costEntry: 0, costFood: 0, costTransport: 0, costEtc: 0,
+      favorite: false, favoritedAt: null,
+      petFriendly: !!r.petFriendly,
+    });
+    sortDayByTime(targetDay);
+    save(); render();
+    toast(`✨ ${r.title} · ${targetDay.label}에 담았어요`);
+  }
+
+  function autoFillTrip() {
+    const recos = getRecommendations(trip.region);
+    if (!recos.length) return 0;
+    if (!trip.days.length) trip.days.push({ id: uid(), label: 'Day 1', date: '', items: [] });
+    const D = trip.days.length;
+    const perDay = Math.max(1, Math.ceil(recos.length / D));
+    const slotTimes = ['10:00', '13:00', '15:30', '18:00', '20:00'];
+    recos.forEach((r, idx) => {
+      const dayIdx = Math.min(D - 1, Math.floor(idx / perDay));
+      const slot = idx % perDay;
+      const targetDay = trip.days[dayIdx];
+      targetDay.items.push({
+        id: uid(),
+        category: r.category, title: r.title,
+        time: slotTimes[slot] || '',
+        desc: r.desc || '',
+        transportMode: '', transportDetail: '',
+        location: r.location ? { ...r.location } : null,
+        costEntry: 0, costFood: 0, costTransport: 0, costEtc: 0,
+        favorite: false, favoritedAt: null,
+        petFriendly: !!r.petFriendly,
+      });
+    });
+    trip.days.forEach(sortDayByTime);
+    return recos.length;
+  }
+
+  function updateLocationUI() {
+    const txt = document.getElementById('f_locText');
+    const clear = document.getElementById('clearLocBtn');
+    if (tempLocation) {
+      txt.textContent = '📍 ' + tempLocation.address;
+      txt.className = 'text-sm text-slate-700 break-words';
+      clear.classList.remove('hidden');
+    } else {
+      txt.textContent = '아직 위치가 없어요';
+      txt.className = 'text-sm text-slate-500';
+      clear.classList.add('hidden');
+    }
+  }
+
+  function renderDayPicker() {
+    const picker = document.getElementById('dayPicker');
+    picker.innerHTML = '';
+    const ctx = trip.days.find(d => d.id === contextDayId);
+    if (ctx) {
+      const b = document.createElement('button');
+      b.type = 'button';
+      const sel = selectedDayId === ctx.id;
+      b.className = `px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap shrink-0 ${sel ? 'bg-sky-500 text-white shadow' : 'bg-slate-100 text-slate-600'}`;
+      b.textContent = `${ctx.label}${ctx.date ? ' · ' + ctx.date : ''}`;
+      b.onclick = () => { selectedDayId = ctx.id; renderDayPicker(); };
+      picker.appendChild(b);
+    }
+    const addBtn = document.createElement('button');
+    addBtn.type = 'button';
+    const sel = selectedDayId === PENDING_NEW_DAY;
+    addBtn.className = `px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap shrink-0 ${sel ? 'bg-sky-500 text-white shadow' : 'bg-white text-slate-500 border-2 border-dashed border-slate-300'}`;
+    addBtn.textContent = `+ Day ${trip.days.length + 1}`;
+    addBtn.onclick = () => { selectedDayId = PENDING_NEW_DAY; renderDayPicker(); };
+    picker.appendChild(addBtn);
+  }
+
+  function openSheet(dayId, itemId) {
+    editing = { dayId, itemId };
+    const day = dayId ? trip.days.find(d => d.id === dayId) : null;
+    const item = (dayId && itemId) ? day?.items.find(i => i.id === itemId) : null;
+    const isEdit = !!item;
+
+    // Day picker only shows in ADD mode
+    document.getElementById('daySection').classList.toggle('hidden', isEdit);
+
+    if (isEdit) {
+      contextDayId = dayId;
+      selectedDayId = dayId;
+    } else {
+      contextDayId = dayId || (trip.days.length > 0 ? trip.days[trip.days.length - 1].id : null);
+      selectedDayId = contextDayId || PENDING_NEW_DAY;
+    }
+    renderDayPicker();
+
+    document.getElementById('sheetTitle').textContent = item ? '일정 편집' : '일정 추가';
+    document.getElementById('deleteBtn').classList.toggle('hidden', !item);
+
+    document.getElementById('f_title').value         = item?.title || '';
+    document.getElementById('f_time').value          = item?.time || '';
+    document.getElementById('f_desc').value          = item?.desc || '';
+    document.getElementById('f_transportDetail').value = item?.transportDetail || '';
+    document.getElementById('f_costEntry').value     = item?.costEntry || '';
+    document.getElementById('f_costFood').value      = item?.costFood || '';
+    document.getElementById('f_costTransport').value = item?.costTransport || '';
+    document.getElementById('f_costEtc').value       = item?.costEtc || '';
+
+    tempLocation = item?.location ? { ...item.location } : null;
+    tempTransportMode = item?.transportMode || '';
+    tempPetFriendly = !!item?.petFriendly;
+    originalReceipts = [...(item?.receipts || [])];
+    tempReceipts = [...originalReceipts];
+    updateLocationUI();
+    renderTransportPicker();
+    renderPetToggle();
+    renderReceipts();
+    updateCostSum();
+
+    let selectedCat = item?.category || 'sight';
+    const picker = document.getElementById('categoryPicker');
+    picker.innerHTML = '';
+    CATEGORIES.filter(c => !c.hidden).forEach(c => {
+      const b = document.createElement('button');
+      b.type = 'button'; b.dataset.cat = c.id;
+      b.className = `py-2 rounded-xl text-[11px] font-medium ${c.chip} ${selectedCat===c.id ? 'ring-2 ring-sky-400' : 'opacity-60'}`;
+      b.innerHTML = `<div class="text-lg leading-none">${c.emoji}</div><div class="mt-0.5">${c.label}</div>`;
+      b.onclick = () => {
+        selectedCat = c.id;
+        [...picker.children].forEach(child => {
+          const cc = getCat(child.dataset.cat);
+          child.className = `py-2 rounded-xl text-[11px] font-medium ${cc.chip} ${selectedCat===cc.id ? 'ring-2 ring-sky-400' : 'opacity-60'}`;
+        });
+      };
+      picker.appendChild(b);
+    });
+
+    document.getElementById('sheetForm').onsubmit = (e) => {
+      e.preventDefault();
+      const data = {
+        category: selectedCat,
+        title:             document.getElementById('f_title').value.trim(),
+        time:              document.getElementById('f_time').value,
+        desc:              document.getElementById('f_desc').value.trim(),
+        transportMode:     tempTransportMode,
+        transportDetail:   document.getElementById('f_transportDetail').value.trim(),
+        location:          tempLocation,
+        costEntry:         Number(document.getElementById('f_costEntry').value) || 0,
+        costFood:          Number(document.getElementById('f_costFood').value) || 0,
+        costTransport:     Number(document.getElementById('f_costTransport').value) || 0,
+        costEtc:           Number(document.getElementById('f_costEtc').value) || 0,
+        petFriendly:       tempPetFriendly,
+        receipts:          [...tempReceipts],
+      };
+      if (!data.title) { alert('어디로 가는지 알려주세요'); return; }
+
+      // Delete photos that were removed during this edit
+      for (const id of originalReceipts) {
+        if (!tempReceipts.includes(id)) deletePhoto(id);
+      }
+
+      // Resolve target day (may create new one)
+      let targetDay;
+      if (selectedDayId === PENDING_NEW_DAY) {
+        const n = trip.days.length + 1;
+        targetDay = { id: uid(), label: `Day ${n}`, date: '', items: [] };
+        trip.days.push(targetDay);
+      } else {
+        targetDay = trip.days.find(d => d.id === selectedDayId) || day || trip.days[trip.days.length - 1];
+      }
+      if (!targetDay) { alert('어느 Day인지 골라주세요'); return; }
+
+      if (item) {
+        // Editing — possibly moved across days
+        if (day && day !== targetDay) {
+          day.items = day.items.filter(i => i.id !== item.id);
+          Object.assign(item, data);
+          targetDay.items.push(item);
+        } else {
+          Object.assign(item, data);
+        }
+      } else {
+        targetDay.items.push({ id: uid(), ...data });
+      }
+      sortDayByTime(targetDay);
+      if (day && day !== targetDay) sortDayByTime(day);
+      // Receipts are now committed — prevent closeSheet from cleaning them up
+      originalReceipts = [...tempReceipts];
+      save(); render(); closeSheet();
+    };
+
+    document.getElementById('sheetBackdrop').classList.remove('hidden');
+    document.getElementById('sheet').classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+  }
+  function closeSheet() {
+    // If sheet is closed without saving (cancel), clean up newly-added photos
+    for (const id of tempReceipts) {
+      if (!originalReceipts.includes(id)) deletePhoto(id);
+    }
+    tempReceipts = [];
+    originalReceipts = [];
+    document.getElementById('sheetBackdrop').classList.add('hidden');
+    document.getElementById('sheet').classList.add('hidden');
+    document.body.style.overflow = '';
+    editing = null;
+  }
+
+  async function renderReceipts() {
+    const grid = document.getElementById('receiptsGrid');
+    grid.innerHTML = '';
+    for (const id of tempReceipts) {
+      const blob = await loadPhoto(id);
+      if (!blob) continue;
+      const url = URL.createObjectURL(blob);
+      const cell = document.createElement('div');
+      cell.className = 'relative aspect-square rounded-lg overflow-hidden bg-slate-100';
+      cell.innerHTML = `
+        <img src="${url}" class="w-full h-full object-cover" />
+        <button type="button" class="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/60 text-white text-xs leading-none flex items-center justify-center" aria-label="삭제">×</button>
+      `;
+      cell.querySelector('img').onclick = () => openPhotoViewer(url);
+      cell.querySelector('button').onclick = (e) => {
+        e.stopPropagation();
+        tempReceipts = tempReceipts.filter(x => x !== id);
+        renderReceipts();
+      };
+      grid.appendChild(cell);
+    }
+  }
+
+  function openPhotoViewer(url) {
+    document.getElementById('photoViewerImg').src = url;
+    document.getElementById('photoViewer').classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+  }
+  function closePhotoViewer() {
+    document.getElementById('photoViewer').classList.add('hidden');
+    document.body.style.overflow = 'hidden';
+  }
+  function deleteCurrentItem() {
+    if (!editing?.itemId) return;
+    if (!confirm('이 일정을 지울까요?')) return;
+    const day = trip.days.find(d => d.id === editing.dayId);
+    const item = day.items.find(i => i.id === editing.itemId);
+    if (item?.receipts?.length) {
+      for (const pid of item.receipts) deletePhoto(pid);
+    }
+    day.items = day.items.filter(i => i.id !== editing.itemId);
+    // Skip orphan cleanup since item was the source
+    originalReceipts = [];
+    tempReceipts = [];
+    save(); render(); closeSheet();
+  }
+  let editingDayId = null;
+  function openDayEdit(dayId) {
+    const day = trip.days.find(d => d.id === dayId);
+    if (!day) return;
+    editingDayId = dayId;
+    document.getElementById('dayEditLabel').value = day.label || '';
+    let isoDate = '';
+    const m = String(day.date || '').match(/(\d{1,2})\/(\d{1,2})/);
+    if (m) {
+      const y = (trip.startDate || `${new Date().getFullYear()}`).slice(0,4);
+      isoDate = `${y}-${String(m[1]).padStart(2,'0')}-${String(m[2]).padStart(2,'0')}`;
+    }
+    document.getElementById('dayEditDate').value = isoDate;
+    document.getElementById('dayEditBackdrop').classList.remove('hidden');
+    document.getElementById('dayEditPopup').classList.remove('hidden');
+  }
+  function closeDayEdit() {
+    document.getElementById('dayEditBackdrop').classList.add('hidden');
+    document.getElementById('dayEditPopup').classList.add('hidden');
+    editingDayId = null;
+  }
+  function saveDayEdit() {
+    if (!editingDayId) return closeDayEdit();
+    const day = trip.days.find(d => d.id === editingDayId);
+    if (!day) return closeDayEdit();
+    const newLabel = document.getElementById('dayEditLabel').value.trim();
+    const newDateIso = document.getElementById('dayEditDate').value;
+    if (newLabel) day.label = newLabel;
+    if (newDateIso) {
+      const [y, mo, d] = newDateIso.split('-').map(Number);
+      const dt = new Date(y, mo-1, d);
+      const weekdays = ['일','월','화','수','목','금','토'];
+      day.date = `${mo}/${d} (${weekdays[dt.getDay()]})`;
+    } else {
+      day.date = '';
+    }
+    save(); render(); closeDayEdit();
+  }
+
+  // ---------------- Settings ----------------
+  function openSettings() {
+    const picker = document.getElementById('themePicker');
+    picker.innerHTML = '';
+    const current = trip.cover?.theme || 'ocean';
+    COVER_THEMES.forEach(t => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = `aspect-square rounded-2xl bg-gradient-to-br ${t.gradient} text-2xl flex items-center justify-center shadow ${current===t.id ? 'ring-4 ring-sky-300' : ''}`;
+      b.textContent = t.emoji;
+      b.onclick = () => { trip.cover = { theme: t.id }; save(); render(); openSettings(); };
+      picker.appendChild(b);
+    });
+
+    // Companion picker
+    const compPicker = document.getElementById('settingsCompanionPicker');
+    compPicker.innerHTML = '';
+    const curComp = trip.companion?.type || '';
+    COMPANION_TYPES.forEach(c => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      const selected = curComp === c.id;
+      b.className = `py-2 rounded-xl text-[11px] font-medium bg-slate-100 ${selected ? 'ring-2 ring-sky-400 bg-sky-50' : 'opacity-70'}`;
+      b.innerHTML = `<div class="text-xl leading-none">${c.emoji}</div><div class="mt-0.5">${c.label}</div>`;
+      b.onclick = () => {
+        const newType = (curComp === c.id) ? '' : c.id;
+        trip.companion = { type: newType, count: trip.companion?.count || 1 };
+        save(); render(); openSettings();
+      };
+      compPicker.appendChild(b);
+    });
+    document.getElementById('settingsCount').value = trip.companion?.count || 1;
+    document.getElementById('settingsStart').value = trip.startDate || '';
+    document.getElementById('settingsEnd').value = trip.endDate || '';
+    document.getElementById('settingsRegion').value = trip.region?.name || '';
+    renderSettingsPetToggle();
+
+    // Region scope picker
+    const scopePicker = document.getElementById('settingsScopePicker');
+    scopePicker.innerHTML = '';
+    const curScope = trip.region?.scope || '';
+    REGION_SCOPES.forEach(s => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      const sel = curScope === s.id;
+      b.className = `py-2.5 rounded-xl text-sm font-medium bg-slate-100 ${sel ? 'ring-2 ring-sky-400 bg-sky-50' : 'opacity-70'}`;
+      b.innerHTML = `${s.emoji} ${s.label}`;
+      b.onclick = () => {
+        const newScope = (curScope === s.id) ? '' : s.id;
+        trip.region = { scope: newScope, name: trip.region?.name || '' };
+        if (!newScope && !trip.region.name) trip.region = null;
+        save(); render(); openSettings();
+      };
+      scopePicker.appendChild(b);
+    });
+
+    document.getElementById('settingsBackdrop').classList.remove('hidden');
+    document.getElementById('settingsSheet').classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+  }
+  function renderSettingsPetToggle() {
+    const btn = document.getElementById('settingsPetBtn');
+    const label = document.getElementById('settingsPetLabel');
+    if (trip.withPet) {
+      btn.className = 'mt-2 w-full py-3 rounded-xl flex items-center justify-center gap-2 font-medium text-sm bg-emerald-100 text-emerald-700 ring-2 ring-emerald-300 active:bg-emerald-200';
+      label.textContent = '반려동물과 함께 해요';
+    } else {
+      btn.className = 'mt-2 w-full py-3 rounded-xl flex items-center justify-center gap-2 font-medium text-sm bg-slate-100 text-slate-500 active:bg-slate-200';
+      label.textContent = '반려동물 없이 가요 (탭해서 바꿔요)';
+    }
+  }
+
+  function closeSettings() {
+    document.getElementById('settingsBackdrop').classList.add('hidden');
+    document.getElementById('settingsSheet').classList.add('hidden');
+    document.body.style.overflow = '';
+  }
+
+  // ---------------- Map ----------------
+  let map = null;
+  let marker = null;
+  let pendingLocation = null;
+
+  function bestStartView() {
+    if (tempLocation) return { center: [tempLocation.lat, tempLocation.lng], zoom: 14 };
+    for (const d of trip.days) for (const it of d.items) {
+      if (it.location?.lat) return { center: [it.location.lat, it.location.lng], zoom: 11 };
+    }
+    return { center: [36.5, 127.8], zoom: 6 };
+  }
+
+  function openMap() {
+    document.getElementById('mapSheet').classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+    pendingLocation = tempLocation ? { ...tempLocation } : null;
+    const view = bestStartView();
+
+    if (!map) {
+      map = L.map('mapEl', { zoomControl: true }).setView(view.center, view.zoom);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OSM', maxZoom: 19,
+      }).addTo(map);
+      map.on('click', (e) => placePin(e.latlng.lat, e.latlng.lng, true));
+    } else {
+      map.setView(view.center, view.zoom);
+    }
+    if (marker) { map.removeLayer(marker); marker = null; }
+    if (pendingLocation) {
+      placePin(pendingLocation.lat, pendingLocation.lng, false);
+      document.getElementById('mapAddress').textContent = '📍 ' + pendingLocation.address;
+      document.getElementById('mapConfirmBtn').disabled = false;
+    } else {
+      document.getElementById('mapAddress').textContent = '위치 미지정';
+      document.getElementById('mapConfirmBtn').disabled = true;
+    }
+    document.getElementById('mapResults').classList.add('hidden');
+    document.getElementById('mapSearch').value = '';
+    setTimeout(() => map.invalidateSize(), 100);
+  }
+
+  function placePin(lat, lng, reverseGeocode) {
+    if (marker) marker.setLatLng([lat, lng]);
+    else marker = L.marker([lat, lng]).addTo(map);
+    pendingLocation = { lat, lng, address: pendingLocation?.address || '' };
+    if (reverseGeocode) {
+      document.getElementById('mapAddress').textContent = '주소 가져오는 중...';
+      document.getElementById('mapConfirmBtn').disabled = false;
+      fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&accept-language=ko`)
+        .then(r => r.json())
+        .then(d => {
+          const address = d.display_name || `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+          pendingLocation.address = address;
+          document.getElementById('mapAddress').textContent = '📍 ' + address;
+        })
+        .catch(() => {
+          pendingLocation.address = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+          document.getElementById('mapAddress').textContent = '📍 ' + pendingLocation.address;
+        });
+    }
+  }
+
+  async function doSearch() {
+    const q = document.getElementById('mapSearch').value.trim();
+    if (!q) return;
+    const list = document.getElementById('mapResults');
+    list.innerHTML = '<div class="px-3 py-2 text-sm text-slate-400">찾아보는 중...</div>';
+    list.classList.remove('hidden');
+    try {
+      const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&accept-language=ko&limit=8`;
+      const r = await fetch(url);
+      const data = await r.json();
+      if (!data.length) {
+        list.innerHTML = '<div class="px-3 py-2 text-sm text-slate-400">찾는 곳이 없네요. 다른 이름으로 검색해보세요</div>';
+        return;
+      }
+      list.innerHTML = '';
+      data.forEach(d => {
+        const row = document.createElement('button');
+        row.type = 'button';
+        row.className = 'block w-full text-left px-3 py-2 text-sm hover:bg-slate-50 active:bg-slate-100 border-b border-slate-100';
+        row.innerHTML = `<div class="font-medium text-slate-800 truncate">${escapeHtml((d.display_name||'').split(',')[0])}</div>
+                         <div class="text-xs text-slate-400 truncate">${escapeHtml(d.display_name || '')}</div>`;
+        row.onclick = () => {
+          const lat = Number(d.lat), lng = Number(d.lon);
+          map.setView([lat, lng], 15);
+          placePin(lat, lng, false);
+          pendingLocation = { lat, lng, address: d.display_name };
+          document.getElementById('mapAddress').textContent = '📍 ' + d.display_name;
+          document.getElementById('mapConfirmBtn').disabled = false;
+          list.classList.add('hidden');
+        };
+        list.appendChild(row);
+      });
+    } catch (err) {
+      list.innerHTML = '<div class="px-3 py-2 text-sm text-red-500">검색이 잘 안되네요. 잠시 후 다시 해볼게요</div>';
+    }
+  }
+
+  function closeMap() {
+    document.getElementById('mapSheet').classList.add('hidden');
+    document.body.style.overflow = 'hidden'; // edit sheet still open
+  }
+  function confirmMap() {
+    if (!pendingLocation) return;
+    tempLocation = { ...pendingLocation };
+    updateLocationUI();
+    closeMap();
+  }
+
+  // ---------------- Wire ----------------
+  document.getElementById('addItemBtn').onclick = () => openSheet(null, null);
+  document.getElementById('sheetCloseBtn').onclick = closeSheet;
+  document.getElementById('sheetBackdrop').onclick = closeSheet;
+  document.getElementById('deleteBtn').onclick = deleteCurrentItem;
+  document.getElementById('settingsBtn').onclick = openSettings;
+  document.getElementById('coverEmojiBtn').onclick = openSettings;
+  document.getElementById('shareBtn').onclick = shareTrip;
+
+  async function shareTrip() {
+    const lines = [];
+    const theme = getTheme(trip.cover?.theme);
+    lines.push(`${theme.emoji} ${trip.title}`);
+    const meta = [trip.dates, regionText(trip.region), companionText(trip.companion)].filter(Boolean);
+    if (meta.length) lines.push(meta.join(' · '));
+    lines.push('');
+
+    let total = 0;
+    trip.days.forEach((day, i) => {
+      lines.push(`📅 ${day.label}${day.date ? ` (${day.date})` : ''}`);
+      if (!day.items.length) lines.push('  (일정 없음)');
+      day.items.forEach(it => {
+        const cat = getCat(it.category);
+        const head = `${it.time ? it.time + ' ' : ''}${cat.emoji} ${it.title}`;
+        lines.push(head);
+        if (it.desc) lines.push(`   💬 ${it.desc}`);
+        if (it.location?.address) {
+          lines.push(`   📍 ${it.location.address}`);
+          if (it.location.lat && it.location.lng) {
+            lines.push(`   🗺 https://www.google.com/maps/search/?api=1&query=${it.location.lat},${it.location.lng}`);
+          }
+        }
+        const mode = it.transportMode ? getMode(it.transportMode) : null;
+        if (mode || it.transportDetail) {
+          const parts = [];
+          if (mode) parts.push(`${mode.emoji} ${mode.label}`);
+          if (it.transportDetail) parts.push(it.transportDetail);
+          lines.push(`   ${parts.join(' · ')}`);
+        }
+        const c = itemCost(it);
+        if (c) { total += c; lines.push(`   💰 ₩${c.toLocaleString()}`); }
+      });
+      lines.push('');
+    });
+
+    if (total) {
+      const cnt = trip.companion?.count || 1;
+      if (cnt > 1) lines.push(`💰 총 ₩${total.toLocaleString()} (1인당 ₩${Math.round(total/cnt).toLocaleString()})`);
+      else lines.push(`💰 총 ₩${total.toLocaleString()}`);
+    }
+    lines.push('');
+
+    // Importable link
+    try {
+      const exportable = {
+        title: trip.title, dates: trip.dates,
+        startDate: trip.startDate, endDate: trip.endDate,
+        cover: trip.cover, companion: trip.companion,
+        region: trip.region, withPet: !!trip.withPet,
+        days: trip.days.map(d => ({
+          label: d.label, date: d.date,
+          items: d.items.map(it => ({
+            category: it.category, title: it.title, time: it.time, desc: it.desc,
+            transportMode: it.transportMode, transportDetail: it.transportDetail,
+            location: it.location,
+            costEntry: it.costEntry, costFood: it.costFood,
+            costTransport: it.costTransport, costEtc: it.costEtc,
+            petFriendly: !!it.petFriendly,
+          })),
+        })),
+      };
+      const compressed = LZString.compressToEncodedURIComponent(JSON.stringify(exportable));
+      const importUrl = `${location.origin}${location.pathname.replace(/trip\.html$/, 'index.html')}#import=${compressed}`;
+      lines.push(`🔗 이 여행 코스 그대로 가져가기:`);
+      lines.push(importUrl);
+      lines.push('');
+    } catch (e) {}
+
+    lines.push('— Travel Planner');
+
+    const text = lines.join('\n');
+
+    if (navigator.share) {
+      try { await navigator.share({ title: trip.title, text }); return; }
+      catch (e) { if (e.name === 'AbortError') return; }
+    }
+    try { await navigator.clipboard.writeText(text); toast('📋 복사했어요! 친구에게 보내보세요'); }
+    catch { prompt('아래 내용을 복사해서 공유해보세요', text); }
+  }
+  document.getElementById('settingsCloseBtn').onclick = closeSettings;
+  document.getElementById('settingsBackdrop').onclick = closeSettings;
+  document.getElementById('deleteTripBtn').onclick = () => {
+    if (!confirm(`'${trip.title}' 여행을 정말 지울까요?`)) return;
+    // Clean up all photos in this trip
+    for (const d of trip.days) for (const it of (d.items || [])) {
+      if (Array.isArray(it.receipts)) for (const pid of it.receipts) deletePhoto(pid);
+    }
+    state.trips = state.trips.filter(t => t.id !== trip.id);
+    save(); location.replace('index.html');
+  };
+
+  ['Entry','Food','Transport','Etc'].forEach(k => {
+    document.getElementById('f_cost'+k).addEventListener('input', updateCostSum);
+  });
+
+  document.getElementById('openMapBtn').onclick = openMap;
+  document.getElementById('clearLocBtn').onclick = () => { tempLocation = null; updateLocationUI(); };
+  document.getElementById('mapBackBtn').onclick = closeMap;
+  document.getElementById('mapConfirmBtn').onclick = confirmMap;
+  document.getElementById('mapSearchBtn').onclick = doSearch;
+  document.getElementById('mapSearch').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); doSearch(); }
+  });
+
+  document.getElementById('tripTitle').addEventListener('input', (e) => { trip.title = e.target.value; save(); });
+  document.getElementById('tripDatesBtn').onclick = openSettings;
+
+  function fmtDateText(iso) { return iso ? iso.replace(/-/g, '.') : ''; }
+  function buildDatesText(start, end) {
+    if (!start) return '';
+    if (!end || end === start) return fmtDateText(start);
+    return `${fmtDateText(start)} — ${fmtDateText(end)}`;
+  }
+  function syncDaysWithDateRange() {
+    if (!trip.startDate || !trip.endDate) return;
+    const start = new Date(trip.startDate + 'T00:00:00');
+    const end = new Date(trip.endDate + 'T00:00:00');
+    if (isNaN(start) || isNaN(end) || end < start) return;
+    const weekdays = ['일','월','화','수','목','금','토'];
+    const startMonth = start.getMonth() + 1;
+    const startYear = start.getFullYear();
+
+    const rangeKeys = new Set();
+    const keyToDateText = new Map();
+    for (const dt = new Date(start); dt <= end; dt.setDate(dt.getDate() + 1)) {
+      const key = `${dt.getMonth()+1}/${dt.getDate()}`;
+      rangeKeys.add(key);
+      keyToDateText.set(key, `${dt.getMonth()+1}/${dt.getDate()} (${weekdays[dt.getDay()]})`);
+    }
+
+    function dayKey(d) {
+      const m = String(d.date || '').match(/(\d{1,2})\/(\d{1,2})/);
+      return m ? `${Number(m[1])}/${Number(m[2])}` : null;
+    }
+    function dayIso(d) {
+      const k = dayKey(d); if (!k) return null;
+      const [mo, da] = k.split('/').map(Number);
+      const y = mo < startMonth ? startYear + 1 : startYear;
+      return `${y}-${String(mo).padStart(2,'0')}-${String(da).padStart(2,'0')}`;
+    }
+
+    // 1. Drop empty Days (items.length === 0)
+    trip.days = trip.days.filter(d => (d.items || []).length > 0);
+
+    // 2. Add empty Days for missing dates in new range
+    const covered = new Set(trip.days.map(dayKey).filter(Boolean));
+    for (const key of rangeKeys) {
+      if (!covered.has(key)) {
+        trip.days.push({ id: uid(), label: '', date: keyToDateText.get(key), items: [] });
+      }
+    }
+
+    // 3. Sort all Days chronologically (item-Days outside range stay but go to start/end naturally)
+    trip.days.sort((a, b) => {
+      const ia = dayIso(a), ib = dayIso(b);
+      if (!ia && !ib) return 0;
+      if (!ia) return 1;
+      if (!ib) return -1;
+      return ia.localeCompare(ib);
+    });
+
+    // 4. Renumber default-pattern labels (empty or "Day N")
+    trip.days.forEach((d, i) => {
+      if (!d.label || /^Day \d+$/.test(d.label)) d.label = `Day ${i + 1}`;
+    });
+  }
+  function onDateChange() {
+    const s = document.getElementById('settingsStart').value;
+    const e = document.getElementById('settingsEnd').value;
+    if (s && e && e < s) { document.getElementById('settingsEnd').value = s; return onDateChange(); }
+    trip.startDate = s;
+    trip.endDate = e;
+    trip.dates = buildDatesText(s, e);
+    syncDaysWithDateRange();
+    save(); render();
+  }
+  document.getElementById('settingsStart').addEventListener('input', onDateChange);
+  document.getElementById('settingsEnd').addEventListener('input', onDateChange);
+
+  // Derive endDate from existing dates text if missing
+  if (!trip.endDate && trip.dates) {
+    const m = String(trip.dates).match(/(\d{4})\D?(\d{1,2})\D?(\d{1,2}).*?(\d{4})\D?(\d{1,2})\D?(\d{1,2})/);
+    if (m) trip.endDate = `${m[4]}-${m[5].padStart(2,'0')}-${m[6].padStart(2,'0')}`;
+    else if (trip.startDate) trip.endDate = trip.startDate;
+  }
+  if (!trip.startDate && trip.dates) {
+    const m = String(trip.dates).match(/(\d{4})\D?(\d{1,2})\D?(\d{1,2})/);
+    if (m) trip.startDate = `${m[1]}-${m[2].padStart(2,'0')}-${m[3].padStart(2,'0')}`;
+  }
+
+  document.getElementById('timeOkBtn').onclick = () => timePopupCb && timePopupCb(true);
+  document.getElementById('timeCancelBtn').onclick = () => timePopupCb && timePopupCb(false);
+  document.getElementById('timeBackdrop').onclick = () => timePopupCb && timePopupCb(false);
+
+  document.getElementById('dayEditOkBtn').onclick = saveDayEdit;
+  document.getElementById('dayEditCancelBtn').onclick = closeDayEdit;
+  document.getElementById('dayEditBackdrop').onclick = closeDayEdit;
+
+  document.getElementById('companionBtn').onclick = openSettings;
+  document.getElementById('regionBtn').onclick = openSettings;
+  document.getElementById('petBtn').onclick = openSettings;
+  document.getElementById('f_petBtn').onclick = () => { tempPetFriendly = !tempPetFriendly; renderPetToggle(); };
+  document.getElementById('settingsPetBtn').onclick = () => { trip.withPet = !trip.withPet; save(); render(); renderSettingsPetToggle(); };
+
+  document.getElementById('f_receiptInput').onchange = async (e) => {
+    const files = [...e.target.files];
+    if (!files.length) return;
+    for (const file of files) {
+      try {
+        const blob = await compressImage(file);
+        const id = uid();
+        await savePhoto(id, blob);
+        tempReceipts.push(id);
+      } catch (err) {
+        console.error('photo save failed', err);
+      }
+    }
+    await renderReceipts();
+    e.target.value = '';
+  };
+
+  document.getElementById('photoViewerClose').onclick = closePhotoViewer;
+  document.getElementById('photoViewer').onclick = closePhotoViewer;
+  document.getElementById('settingsRegion').addEventListener('input', (e) => {
+    const name = e.target.value;
+    const scope = trip.region?.scope || '';
+    trip.region = (scope || name.trim()) ? { scope, name: name.trim() } : null;
+    save(); render();
+  });
+  document.getElementById('settingsCount').addEventListener('input', (e) => {
+    const c = Math.max(1, Number(e.target.value) || 1);
+    trip.companion = { type: trip.companion?.type || '', count: c };
+    save(); render();
+  });
+  (() => {
+    const input = document.getElementById('settingsCount');
+    document.getElementById('settingsCount_dec').onclick = () => {
+      input.value = Math.max(1, (Number(input.value) || 1) - 1);
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    };
+    document.getElementById('settingsCount_inc').onclick = () => {
+      input.value = Math.min(99, (Number(input.value) || 1) + 1);
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    };
+  })();
+
+  trip.days.forEach(sortDayByTime);
+
+  let autoFilledCount = 0;
+  if (trip._pendingAutoFill) {
+    delete trip._pendingAutoFill;
+    autoFilledCount = autoFillTrip();
+  }
+
+  save();
+  render();
+
+  if (autoFilledCount > 0) {
+    setTimeout(() => toast(`✨ 추천 코스 ${autoFilledCount}곳으로 일정을 채웠어요`), 300);
+  }
+  </script>
+</body>
+</html>

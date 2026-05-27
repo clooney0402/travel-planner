@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#0ea5e9" />
+  <title>내 여행</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/lz-string@1.5.0/libs/lz-string.min.js"></script>
+  <!-- Tailwind hint (dynamic gradient classes) -->
+  <div class="hidden from-sky-400 to-cyan-400 from-emerald-400 to-teal-500 from-fuchsia-400 to-purple-500 from-amber-400 to-orange-500 from-orange-400 to-rose-500 from-slate-300 to-sky-500 from-yellow-400 to-orange-600 from-indigo-500 to-slate-800"></div>
+  <style>
+    html, body { font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Pretendard", system-ui, sans-serif; -webkit-tap-highlight-color: transparent; }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { scrollbar-width: none; }
+    .sheet-enter { animation: slideUp 0.22s cubic-bezier(.2,.8,.2,1); }
+    @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+    .backdrop-enter { animation: fadeIn 0.18s ease-out; }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  </style>
+</head>
+<body class="bg-slate-100 min-h-screen pb-28">
+
+  <header class="bg-gradient-to-br from-sky-500 via-sky-400 to-cyan-300 text-white px-5 pt-12 pb-5 shadow-lg">
+    <div class="max-w-md mx-auto">
+      <div class="text-sm text-white/85">안녕하세요 👋</div>
+      <h1 class="text-3xl font-extrabold mt-1">내 여행 ✈️</h1>
+
+      <div id="overallStats" class="mt-3 text-sm text-white/90">함께 떠나볼까요? ✨</div>
+    </div>
+  </header>
+
+  <nav class="max-w-md mx-auto px-4 -mt-3 mb-1 relative z-[1]">
+    <div class="bg-white rounded-2xl shadow flex p-1 gap-1">
+      <button class="flex-1 py-2 rounded-xl bg-sky-500 text-white font-medium text-sm" aria-current="page">✈️ 여행 <span id="navTripCount" class="opacity-80"></span></button>
+      <a href="favorites.html" class="flex-1 py-2 rounded-xl text-slate-600 font-medium text-sm text-center">❤️ 즐겨찾기 <span id="navFavCount" class="text-slate-400"></span></a>
+    </div>
+  </nav>
+
+  <main class="max-w-md mx-auto px-4 pt-3">
+    <!-- Year filter -->
+    <div id="yearTabs" class="flex gap-2 overflow-x-auto no-scrollbar -mx-4 px-4 pb-3"></div>
+
+    <!-- Trip grid -->
+    <div id="tripGrid" class="grid grid-cols-2 gap-3"></div>
+
+    <!-- Empty state -->
+    <div id="emptyAll" class="hidden text-center py-16">
+      <div class="text-6xl">🧳</div>
+      <p class="mt-4 text-slate-500">아직 떠난 여행이 없네요</p>
+      <p class="text-slate-400 text-sm">+ 버튼으로 첫 여행을 만들어볼까요?</p>
+    </div>
+    <div id="emptyFilter" class="hidden text-center py-12">
+      <p class="text-slate-500">이 해엔 떠난 여행이 없네요</p>
+    </div>
+  </main>
+
+  <!-- FAB -->
+  <button id="addTripFab"
+          class="fixed bottom-6 z-10 w-14 h-14 rounded-full bg-sky-500 text-white text-3xl shadow-2xl active:scale-95 flex items-center justify-center"
+          style="right: max(1.5rem, calc(50% - 13rem));"
+          title="새 여행">+</button>
+
+  <!-- Import preview sheet -->
+  <div id="importBackdrop" class="hidden fixed inset-0 bg-black/40 z-20 backdrop-enter"></div>
+  <div id="importSheet" class="hidden fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md bg-white rounded-t-3xl z-30 max-h-[92vh] overflow-y-auto sheet-enter shadow-2xl">
+    <div class="sticky top-0 bg-white px-5 pt-3 pb-2 border-b border-slate-100 z-10">
+      <div class="w-10 h-1 bg-slate-300 rounded-full mx-auto"></div>
+      <div class="flex items-center justify-between mt-3">
+        <h2 class="text-lg font-bold">📥 여행 코스 가져오기</h2>
+        <button id="importCloseBtn" class="text-slate-400 text-2xl leading-none w-8 h-8 flex items-center justify-center">×</button>
+      </div>
+    </div>
+    <div class="p-5">
+      <p class="text-xs text-slate-500 mb-3">친구가 짜놓은 코스를 그대로 내 여행에 담을 수 있어요</p>
+      <div id="importPreviewCard" class="rounded-2xl shadow-md overflow-hidden relative">
+        <div id="importPreviewCover" class="aspect-[2/1] bg-gradient-to-br from-sky-400 to-cyan-400 flex items-center justify-center">
+          <div id="importPreviewEmoji" class="text-5xl drop-shadow-lg">🏝️</div>
+        </div>
+        <div class="p-4 bg-white">
+          <div id="importPreviewTitle" class="font-bold text-slate-800 text-lg break-words"></div>
+          <div id="importPreviewDates" class="text-xs text-slate-500 mt-0.5"></div>
+          <div id="importPreviewChips" class="mt-2 flex flex-wrap gap-1"></div>
+          <div id="importPreviewStats" class="mt-3 pt-3 border-t border-slate-100 text-xs text-slate-600"></div>
+          <div id="importPreviewDays" class="mt-2 text-[11px] text-slate-500 space-y-0.5"></div>
+        </div>
+      </div>
+      <div class="mt-4 flex gap-2">
+        <button id="importCancelBtn" type="button" class="flex-1 py-3 rounded-xl bg-slate-100 text-slate-600 font-medium active:bg-slate-200">다음에요</button>
+        <button id="importConfirmBtn" type="button" class="flex-1 py-3 rounded-xl bg-sky-500 text-white font-bold active:bg-sky-600">내 여행에 담기</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- New trip sheet -->
+  <div id="newBackdrop" class="hidden fixed inset-0 bg-black/40 z-20 backdrop-enter"></div>
+  <div id="newSheet" class="hidden fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md bg-white rounded-t-3xl z-30 max-h-[92vh] overflow-y-auto sheet-enter shadow-2xl">
+    <div class="sticky top-0 bg-white px-5 pt-3 pb-2 border-b border-slate-100 z-10">
+      <div class="w-10 h-1 bg-slate-300 rounded-full mx-auto"></div>
+      <div class="flex items-center justify-between mt-3">
+        <h2 class="text-lg font-bold">새 여행 ✨</h2>
+        <button id="newCloseBtn" class="text-slate-400 text-2xl leading-none w-8 h-8 flex items-center justify-center">×</button>
+      </div>
+    </div>
+    <form id="newForm" class="p-5 space-y-4">
+      <div>
+        <label class="text-xs text-slate-500 font-medium">어떤 분위기로 떠나요?</label>
+        <div id="newThemePicker" class="mt-2 grid grid-cols-4 gap-2"></div>
+      </div>
+      <div>
+        <label class="text-xs text-slate-500 font-medium">여행 이름</label>
+        <input id="nf_title" type="text" placeholder="예: 도쿄 출장" class="mt-1 w-full px-4 py-3 bg-slate-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-400" />
+      </div>
+      <div class="grid grid-cols-2 gap-2">
+        <div>
+          <label class="text-xs text-slate-500 font-medium">언제 떠나요?</label>
+          <input id="nf_start" type="date" class="mt-1 w-full px-4 py-3 bg-slate-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-400" />
+        </div>
+        <div>
+          <label class="text-xs text-slate-500 font-medium">언제 돌아와요?</label>
+          <input id="nf_end" type="date" class="mt-1 w-full px-4 py-3 bg-slate-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-400" />
+        </div>
+      </div>
+      <div>
+        <label class="text-xs text-slate-500 font-medium">어디로 가나요?</label>
+        <div id="newScopePicker" class="mt-2 grid grid-cols-2 gap-2"></div>
+        <input id="nf_region" type="text" placeholder="예: 제주도, 도쿄, 발리" class="mt-2 w-full px-4 py-3 bg-slate-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-400" />
+      </div>
+      <div>
+        <label class="text-xs text-slate-500 font-medium">누구랑 가나요?</label>
+        <div id="newCompanionPicker" class="mt-2 grid grid-cols-4 gap-2"></div>
+      </div>
+      <div>
+        <button id="nf_petBtn" type="button" class="w-full py-3 rounded-xl flex items-center justify-center gap-2 font-medium text-sm bg-slate-100 text-slate-500 active:bg-slate-200">
+          <span class="text-lg">🐾</span>
+          <span id="nf_petLabel">반려동물과 함께 해요 (탭해서 켜기)</span>
+        </button>
+      </div>
+      <div>
+        <label class="text-xs text-slate-500 font-medium">총 몇 명이에요? (본인 포함)</label>
+        <div class="mt-1 flex items-center gap-2">
+          <button type="button" id="nf_count_dec" class="w-12 h-12 rounded-xl bg-slate-100 text-2xl font-bold text-slate-600 active:bg-slate-200 shrink-0">−</button>
+          <input id="nf_count" type="number" inputmode="numeric" min="1" value="1" class="flex-1 min-w-0 px-4 py-3 bg-slate-100 rounded-xl text-center text-lg font-bold focus:outline-none focus:ring-2 focus:ring-sky-400" />
+          <button type="button" id="nf_count_inc" class="w-12 h-12 rounded-xl bg-slate-100 text-2xl font-bold text-slate-600 active:bg-slate-200 shrink-0">+</button>
+        </div>
+      </div>
+      <div>
+        <label class="text-xs text-slate-500 font-medium">루트는 어떻게 짤까요?</label>
+        <div class="mt-2 grid grid-cols-2 gap-2">
+          <button id="nf_modeManual" type="button" class="py-3 rounded-xl text-sm font-medium">
+            <div class="text-xl leading-none">✏️</div>
+            <div class="mt-1">직접 짜요</div>
+          </button>
+          <button id="nf_modeAuto" type="button" class="py-3 rounded-xl text-sm font-medium">
+            <div class="text-xl leading-none">✨</div>
+            <div class="mt-1">추천으로 채워요</div>
+          </button>
+        </div>
+        <p id="nf_modeHint" class="hidden mt-2 text-[11px] text-slate-500 text-center"></p>
+      </div>
+      <button type="submit" class="w-full py-3 rounded-xl bg-sky-500 text-white font-bold active:bg-sky-600">여행 떠나기 ✨</button>
+    </form>
+  </div>
+
+  <script>
+  const STORAGE_KEY = 'travel-planner-v2';
+  const COVER_THEMES = [
+    { id: 'ocean',  emoji: '🏝️', gradient: 'from-sky-400 to-cyan-400' },
+    { id: 'forest', emoji: '🏔️', gradient: 'from-emerald-400 to-teal-500' },
+    { id: 'city',   emoji: '🌆', gradient: 'from-fuchsia-400 to-purple-500' },
+    { id: 'temple', emoji: '⛩️', gradient: 'from-amber-400 to-orange-500' },
+    { id: 'sunset', emoji: '🌅', gradient: 'from-orange-400 to-rose-500' },
+    { id: 'snow',   emoji: '❄️', gradient: 'from-slate-300 to-sky-500' },
+    { id: 'desert', emoji: '🏜️', gradient: 'from-yellow-400 to-orange-600' },
+    { id: 'night',  emoji: '🌃', gradient: 'from-indigo-500 to-slate-800' },
+  ];
+  const COMPANION_TYPES = [
+    { id: 'family',  emoji: '👨‍👩‍👧', label: '가족' },
+    { id: 'couple',  emoji: '💑', label: '연인' },
+    { id: 'friends', emoji: '🧑‍🤝‍🧑', label: '친구' },
+    { id: 'etc',     emoji: '✨', label: '기타' },
+  ];
+  const REGION_SCOPES = [
+    { id: 'domestic',      emoji: '🏠', label: '국내' },
+    { id: 'international', emoji: '🌏', label: '국외' },
+  ];
+  const KNOWN_RECO_REGIONS = ['제주도', '서울', '부산', '강릉', '도쿄', '오사카'];
+  const KNOWN_RECO_ALIASES = { 'jeju':'제주도', '제주':'제주도', 'seoul':'서울', 'busan':'부산', 'gangneung':'강릉', 'tokyo':'도쿄', 'osaka':'오사카' };
+  function regionHasRecs(name) {
+    if (!name) return null;
+    const n = String(name).trim().toLowerCase();
+    for (const key of KNOWN_RECO_REGIONS) {
+      const k = key.toLowerCase();
+      if (n === k || n.includes(k) || k.includes(n)) return key;
+    }
+    for (const alias in KNOWN_RECO_ALIASES) {
+      if (n.includes(alias)) return KNOWN_RECO_ALIASES[alias];
+    }
+    return null;
+  }
+  const getCompanion = (id) => COMPANION_TYPES.find(c => c.id === id);
+  const getScope = (id) => REGION_SCOPES.find(s => s.id === id);
+  function companionText(comp) {
+    if (!comp) return '';
+    const t = getCompanion(comp.type);
+    if (!t && (!comp.count || comp.count <= 1)) return '';
+    const left = t ? `${t.emoji} ${t.label}` : '👥';
+    return comp.count > 1 ? `${left} ${comp.count}명` : left;
+  }
+  function regionText(region) {
+    if (!region) return '';
+    const s = getScope(region.scope);
+    if (region.name) return `${s?.emoji || '📍'} ${region.name}`;
+    if (s) return `${s.emoji} ${s.label}`;
+    return '';
+  }
+  const WEEKDAYS = ['일','월','화','수','목','금','토'];
+  const uid = () => Math.random().toString(36).slice(2, 10);
+  const getTheme = (id) => COVER_THEMES.find(t => t.id === id) || COVER_THEMES[0];
+  const escapeHtml = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+  function loadState() {
+    try {
+      const v2 = localStorage.getItem(STORAGE_KEY);
+      if (v2) return JSON.parse(v2);
+    } catch {}
+    try {
+      const v1 = localStorage.getItem('travel-planner-v1');
+      if (v1) {
+        const old = JSON.parse(v1);
+        const m = String(old.tripDates || '').match(/(20\d{2})\D?(\d{1,2})\D?(\d{1,2})/);
+        const startDate = m ? `${m[1]}-${m[2].padStart(2,'0')}-${m[3].padStart(2,'0')}` : '';
+        const migrated = { trips: [{
+          id: uid(),
+          title: old.tripTitle || '여행',
+          dates: old.tripDates || '',
+          startDate,
+          cover: { theme: 'ocean' },
+          days: old.days || [],
+          createdAt: Date.now(),
+        }] };
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(migrated));
+        localStorage.removeItem('travel-planner-v1');
+        return migrated;
+      }
+    } catch {}
+    return { trips: [] };
+  }
+  const save = () => localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+
+  let state = loadState();
+  let selectedYear = 'all';
+
+  function tripYear(trip) {
+    const m = String(trip.dates || '').match(/(20\d{2})/);
+    if (m) return Number(m[1]);
+    if (trip.startDate) return Number(String(trip.startDate).slice(0, 4));
+    return new Date().getFullYear();
+  }
+  function tripDays(trip) { return (trip.days || []).length; }
+  function tripItems(trip) { return (trip.days || []).reduce((s,d) => s + (d.items?.length||0), 0); }
+  function itemCost(i) { return Number(i.costEntry||0) + Number(i.costFood||0) + Number(i.costTransport||0) + Number(i.costEtc||0) + Number(i.cost||0); }
+  function tripCost(trip) { return (trip.days || []).reduce((s,d) => s + (d.items||[]).reduce((a,i)=>a+itemCost(i),0), 0); }
+
+  function fmtDateKor(iso) {
+    if (!iso) return '';
+    const d = new Date(iso);
+    if (isNaN(d)) return iso;
+    return `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`;
+  }
+  function buildDatesText(start, end) {
+    if (!start) return '';
+    if (!end || end === start) return fmtDateKor(start);
+    return `${fmtDateKor(start)} — ${fmtDateKor(end)}`;
+  }
+  function buildDays(start, end) {
+    const days = [];
+    if (!start) { days.push({ id: uid(), label: 'Day 1', date: '', items: [] }); return days; }
+    const s = new Date(start);
+    const e = end ? new Date(end) : s;
+    if (isNaN(s) || isNaN(e) || e < s) { days.push({ id: uid(), label: 'Day 1', date: '', items: [] }); return days; }
+    const d = new Date(s);
+    let i = 1;
+    while (d <= e) {
+      days.push({ id: uid(), label: `Day ${i}`, date: `${d.getMonth()+1}/${d.getDate()} (${WEEKDAYS[d.getDay()]})`, items: [] });
+      d.setDate(d.getDate() + 1); i++;
+      if (i > 60) break;
+    }
+    return days;
+  }
+
+  function render() {
+    // overall
+    const totalTrips = state.trips.length;
+    const totalDays = state.trips.reduce((s,t) => s + tripDays(t), 0);
+    const totalCost = state.trips.reduce((s,t) => s + tripCost(t), 0);
+    document.getElementById('overallStats').textContent = totalTrips === 0
+      ? '함께 떠나볼까요? ✨'
+      : `지금까지 ${totalTrips}번 다녀왔어요 · 총 ${totalDays}일 · ₩${totalCost.toLocaleString()}`;
+
+    // nav badges
+    const favCount = state.trips.reduce((s,t) => s + (t.days||[]).reduce((a,d) => a + (d.items||[]).filter(i => i.favorite).length, 0), 0);
+    document.getElementById('navTripCount').textContent = totalTrips || '';
+    document.getElementById('navFavCount').textContent = favCount || '';
+
+    // year tabs
+    const years = [...new Set(state.trips.map(tripYear))].sort((a,b)=>b-a);
+    const tabs = document.getElementById('yearTabs');
+    tabs.innerHTML = '';
+    if (state.trips.length > 0) {
+      const all = makeYearPill('all', '전체');
+      tabs.appendChild(all);
+      years.forEach(y => tabs.appendChild(makeYearPill(String(y), `${y}`)));
+    }
+
+    // filter
+    const filtered = state.trips
+      .filter(t => selectedYear === 'all' || tripYear(t) === Number(selectedYear))
+      .sort((a, b) => {
+        const aDate = a.startDate || '';
+        const bDate = b.startDate || '';
+        if (aDate !== bDate) return bDate.localeCompare(aDate);
+        return (b.createdAt||0) - (a.createdAt||0);
+      });
+
+    const grid = document.getElementById('tripGrid');
+    grid.innerHTML = '';
+    filtered.forEach(t => grid.appendChild(renderCard(t)));
+
+    // empty states
+    document.getElementById('emptyAll').classList.toggle('hidden', state.trips.length !== 0);
+    document.getElementById('emptyFilter').classList.toggle('hidden', !(state.trips.length > 0 && filtered.length === 0));
+  }
+
+  function makeYearPill(value, label) {
+    const b = document.createElement('button');
+    const active = value === selectedYear;
+    b.className = `px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap ${active ? 'bg-sky-500 text-white shadow' : 'bg-white text-slate-600 border border-slate-200'}`;
+    b.textContent = label;
+    b.onclick = () => { selectedYear = value; render(); };
+    return b;
+  }
+
+  function renderCard(trip) {
+    const theme = getTheme(trip.cover?.theme);
+    const y = tripYear(trip);
+    const a = document.createElement('a');
+    a.href = `trip.html?id=${trip.id}`;
+    a.className = 'relative block rounded-2xl overflow-hidden shadow-md active:scale-[0.98] transition aspect-[4/5]';
+    const itemsN = tripItems(trip);
+    const daysN = tripDays(trip);
+    const cost = tripCost(trip);
+    const compTxt = companionText(trip.companion);
+    const regTxt = regionText(trip.region);
+    const topChips = [regTxt, compTxt].filter(Boolean);
+    a.innerHTML = `
+      <div class="absolute inset-0 bg-gradient-to-br ${theme.gradient} flex items-center justify-center">
+        <div class="text-6xl drop-shadow-lg">${theme.emoji}</div>
+      </div>
+      <div class="absolute top-2 right-2 bg-white/25 backdrop-blur text-white text-[10px] font-bold px-2 py-0.5 rounded-full">${y}</div>
+      ${topChips.length ? `<div class="absolute top-2 left-2 right-12 flex flex-wrap gap-1">${topChips.map(t => `<span class="bg-white/25 backdrop-blur text-white text-[10px] font-medium px-2 py-0.5 rounded-full truncate max-w-full">${escapeHtml(t)}</span>`).join('')}</div>` : ''}
+      <div class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent p-3 pt-10">
+        <div class="text-white font-bold truncate">${escapeHtml(trip.title || '(제목 없음)')}</div>
+        <div class="text-white/85 text-[11px] truncate">${escapeHtml(trip.dates || '날짜 미정')}</div>
+        <div class="text-white/90 text-[11px] mt-0.5">${daysN}일 · ${itemsN}개${cost ? ` · ₩${cost.toLocaleString()}` : ''}</div>
+      </div>
+    `;
+    return a;
+  }
+
+  // ---- New trip sheet ----
+  let newTheme = 'ocean';
+  let newCompanion = '';
+  let newScope = '';
+  let newWithPet = false;
+  let newRouteMode = 'manual';
+  function openNew() {
+    newTheme = 'ocean';
+    newCompanion = '';
+    newScope = '';
+    newWithPet = false;
+    newRouteMode = 'manual';
+    document.getElementById('nf_title').value = '';
+    document.getElementById('nf_start').value = '';
+    document.getElementById('nf_end').value = '';
+    document.getElementById('nf_region').value = '';
+    document.getElementById('nf_count').value = 1;
+    renderThemePicker();
+    renderCompanionPicker();
+    renderScopePicker();
+    renderNewPetToggle();
+    renderRouteMode();
+    document.getElementById('newBackdrop').classList.remove('hidden');
+    document.getElementById('newSheet').classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+  }
+  function renderRouteMode() {
+    const manual = document.getElementById('nf_modeManual');
+    const auto = document.getElementById('nf_modeAuto');
+    const hint = document.getElementById('nf_modeHint');
+    const baseSel = 'py-3 rounded-xl text-sm font-medium bg-sky-100 text-sky-700 ring-2 ring-sky-400';
+    const baseUnsel = 'py-3 rounded-xl text-sm font-medium bg-slate-100 text-slate-500 active:bg-slate-200';
+    if (newRouteMode === 'manual') {
+      manual.className = baseSel;
+      auto.className = baseUnsel;
+      hint.classList.add('hidden');
+    } else {
+      manual.className = baseUnsel;
+      auto.className = baseSel;
+      const name = document.getElementById('nf_region').value.trim();
+      const matched = regionHasRecs(name);
+      hint.classList.remove('hidden');
+      if (matched) hint.textContent = `✨ ${matched}의 추천 장소로 일정을 채워드릴게요`;
+      else if (name) hint.textContent = `아직 '${name}'에는 추천 데이터가 없어요. 직접 짜기로 만들어주세요`;
+      else hint.textContent = '먼저 위에 가는 곳을 입력해주세요';
+    }
+  }
+  function renderNewPetToggle() {
+    const btn = document.getElementById('nf_petBtn');
+    const label = document.getElementById('nf_petLabel');
+    if (newWithPet) {
+      btn.className = 'w-full py-3 rounded-xl flex items-center justify-center gap-2 font-medium text-sm bg-emerald-100 text-emerald-700 ring-2 ring-emerald-300 active:bg-emerald-200';
+      label.textContent = '반려동물과 함께 해요';
+    } else {
+      btn.className = 'w-full py-3 rounded-xl flex items-center justify-center gap-2 font-medium text-sm bg-slate-100 text-slate-500 active:bg-slate-200';
+      label.textContent = '반려동물과 함께 해요 (탭해서 켜기)';
+    }
+  }
+  function renderScopePicker() {
+    const picker = document.getElementById('newScopePicker');
+    picker.innerHTML = '';
+    REGION_SCOPES.forEach(s => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      const selected = newScope === s.id;
+      b.className = `py-2.5 rounded-xl text-sm font-medium bg-slate-100 ${selected ? 'ring-2 ring-sky-400 bg-sky-50' : 'opacity-70'}`;
+      b.innerHTML = `${s.emoji} ${s.label}`;
+      b.onclick = () => { newScope = (newScope === s.id) ? '' : s.id; renderScopePicker(); };
+      picker.appendChild(b);
+    });
+  }
+  function renderCompanionPicker() {
+    const picker = document.getElementById('newCompanionPicker');
+    picker.innerHTML = '';
+    COMPANION_TYPES.forEach(c => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      const selected = newCompanion === c.id;
+      b.className = `py-2 rounded-xl text-[11px] font-medium bg-slate-100 ${selected ? 'ring-2 ring-sky-400 bg-sky-50' : 'opacity-70'}`;
+      b.innerHTML = `<div class="text-xl leading-none">${c.emoji}</div><div class="mt-0.5">${c.label}</div>`;
+      b.onclick = () => { newCompanion = (newCompanion === c.id) ? '' : c.id; renderCompanionPicker(); };
+      picker.appendChild(b);
+    });
+  }
+  function closeNew() {
+    document.getElementById('newBackdrop').classList.add('hidden');
+    document.getElementById('newSheet').classList.add('hidden');
+    document.body.style.overflow = '';
+  }
+  function renderThemePicker() {
+    const picker = document.getElementById('newThemePicker');
+    picker.innerHTML = '';
+    COVER_THEMES.forEach(t => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = `aspect-square rounded-2xl bg-gradient-to-br ${t.gradient} text-2xl flex items-center justify-center shadow ${newTheme===t.id ? 'ring-4 ring-sky-300' : ''}`;
+      b.textContent = t.emoji;
+      b.onclick = () => { newTheme = t.id; renderThemePicker(); };
+      picker.appendChild(b);
+    });
+  }
+  document.getElementById('newForm').onsubmit = (e) => {
+    e.preventDefault();
+    const title = document.getElementById('nf_title').value.trim();
+    const start = document.getElementById('nf_start').value;
+    const end   = document.getElementById('nf_end').value;
+    if (!title) { alert('여행 이름을 입력해주세요'); return; }
+    const count = Math.max(1, Number(document.getElementById('nf_count').value) || 1);
+    const regionName = document.getElementById('nf_region').value.trim();
+    const region = (newScope || regionName) ? { scope: newScope, name: regionName } : null;
+    const trip = {
+      id: uid(),
+      title,
+      dates: buildDatesText(start, end),
+      startDate: start || '',
+      endDate: end || start || '',
+      cover: { theme: newTheme },
+      companion: { type: newCompanion, count },
+      region,
+      withPet: newWithPet,
+      days: buildDays(start, end),
+      createdAt: Date.now(),
+    };
+    if (newRouteMode === 'auto' && regionHasRecs(regionName)) {
+      trip._pendingAutoFill = true;
+    }
+    state.trips.push(trip);
+    save();
+    location.assign(`trip.html?id=${trip.id}`);
+  };
+
+  document.getElementById('addTripFab').onclick = openNew;
+  document.getElementById('newCloseBtn').onclick = closeNew;
+  document.getElementById('newBackdrop').onclick = closeNew;
+
+  // ---- Import flow ----
+  let pendingImport = null;
+  function tryImportFromHash() {
+    const m = location.hash.match(/#import=(.+)/);
+    if (!m) return;
+    try {
+      const json = LZString.decompressFromEncodedURIComponent(m[1]);
+      if (!json) throw new Error('decode failed');
+      const data = JSON.parse(json);
+      if (!data || !data.title || !Array.isArray(data.days)) throw new Error('invalid');
+      pendingImport = data;
+      showImportPreview(data);
+      history.replaceState(null, '', location.pathname);
+    } catch (e) {
+      alert('가져오기 데이터를 읽을 수 없어요. 링크를 다시 확인해주세요');
+      history.replaceState(null, '', location.pathname);
+    }
+  }
+  function showImportPreview(data) {
+    const theme = getTheme(data.cover?.theme);
+    document.getElementById('importPreviewCover').className = `aspect-[2/1] bg-gradient-to-br ${theme.gradient} flex items-center justify-center`;
+    document.getElementById('importPreviewEmoji').textContent = theme.emoji;
+    document.getElementById('importPreviewTitle').textContent = data.title;
+    document.getElementById('importPreviewDates').textContent = data.dates || '날짜 미정';
+    const chips = document.getElementById('importPreviewChips');
+    chips.innerHTML = '';
+    const addChip = (txt) => {
+      const c = document.createElement('span');
+      c.className = 'text-[10px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 font-medium';
+      c.textContent = txt;
+      chips.appendChild(c);
+    };
+    const rTxt = regionText(data.region);
+    if (rTxt) addChip(rTxt);
+    const cTxt = companionText(data.companion);
+    if (cTxt) addChip(cTxt);
+    if (data.withPet) addChip('🐾 반려동물과 함께');
+    const totalItems = data.days.reduce((s,d) => s + (d.items?.length||0), 0);
+    const totalCost = data.days.reduce((s,d) => s + (d.items||[]).reduce((a,i) => a + Number(i.costEntry||0) + Number(i.costFood||0) + Number(i.costTransport||0) + Number(i.costEtc||0), 0), 0);
+    document.getElementById('importPreviewStats').textContent = `${data.days.length}일 · ${totalItems}개 일정${totalCost ? ' · ₩' + totalCost.toLocaleString() : ''}`;
+    const daysDiv = document.getElementById('importPreviewDays');
+    daysDiv.innerHTML = '';
+    data.days.forEach(d => {
+      const row = document.createElement('div');
+      row.textContent = `📅 ${d.label}${d.date ? ' (' + d.date + ')' : ''} — ${d.items?.length || 0}개`;
+      daysDiv.appendChild(row);
+    });
+    document.getElementById('importBackdrop').classList.remove('hidden');
+    document.getElementById('importSheet').classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+  }
+  function closeImport() {
+    document.getElementById('importBackdrop').classList.add('hidden');
+    document.getElementById('importSheet').classList.add('hidden');
+    document.body.style.overflow = '';
+    pendingImport = null;
+  }
+  function confirmImport() {
+    if (!pendingImport) return closeImport();
+    const data = pendingImport;
+    const newTrip = {
+      id: uid(),
+      title: data.title,
+      dates: data.dates || '',
+      startDate: data.startDate || '',
+      endDate: data.endDate || '',
+      cover: data.cover || { theme: 'ocean' },
+      companion: data.companion || { type: '', count: 1 },
+      region: data.region || null,
+      withPet: !!data.withPet,
+      days: (data.days || []).map(d => ({
+        id: uid(),
+        label: d.label || '',
+        date: d.date || '',
+        items: (d.items || []).map(it => ({
+          id: uid(),
+          category: it.category || 'etc',
+          title: it.title || '',
+          time: it.time || '',
+          desc: it.desc || '',
+          transportMode: it.transportMode || '',
+          transportDetail: it.transportDetail || '',
+          location: it.location || null,
+          costEntry: Number(it.costEntry) || 0,
+          costFood: Number(it.costFood) || 0,
+          costTransport: Number(it.costTransport) || 0,
+          costEtc: Number(it.costEtc) || 0,
+          petFriendly: !!it.petFriendly,
+          favorite: false,
+          favoritedAt: null,
+        })),
+      })),
+      createdAt: Date.now(),
+    };
+    state.trips.push(newTrip);
+    save();
+    closeImport();
+    location.assign(`trip.html?id=${newTrip.id}`);
+  }
+  document.getElementById('importCloseBtn').onclick = closeImport;
+  document.getElementById('importBackdrop').onclick = closeImport;
+  document.getElementById('importCancelBtn').onclick = closeImport;
+  document.getElementById('importConfirmBtn').onclick = confirmImport;
+  document.getElementById('nf_petBtn').onclick = () => { newWithPet = !newWithPet; renderNewPetToggle(); };
+  document.getElementById('nf_modeManual').onclick = () => { newRouteMode = 'manual'; renderRouteMode(); };
+  document.getElementById('nf_modeAuto').onclick = () => { newRouteMode = 'auto'; renderRouteMode(); };
+  document.getElementById('nf_region').addEventListener('input', () => { if (newRouteMode === 'auto') renderRouteMode(); });
+
+  function bindStepper(decId, incId, inputId, min = 1, max = 99) {
+    const input = document.getElementById(inputId);
+    document.getElementById(decId).onclick = () => {
+      input.value = Math.max(min, (Number(input.value) || min) - 1);
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    };
+    document.getElementById(incId).onclick = () => {
+      input.value = Math.min(max, (Number(input.value) || min) + 1);
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    };
+  }
+  bindStepper('nf_count_dec', 'nf_count_inc', 'nf_count');
+
+  render();
+  tryImportFromHash();
+  </script>
+</body>
+</html>

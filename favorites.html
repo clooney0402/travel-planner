@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#f43f5e" />
+  <title>내 즐겨찾기</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    html, body { font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Pretendard", system-ui, sans-serif; -webkit-tap-highlight-color: transparent; }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { scrollbar-width: none; }
+  </style>
+</head>
+<body class="bg-slate-100 min-h-screen pb-12">
+
+  <header class="bg-gradient-to-br from-rose-500 via-rose-400 to-pink-400 text-white px-5 pt-12 pb-5 shadow-lg">
+    <div class="max-w-md mx-auto">
+      <a href="index.html" class="inline-flex items-center gap-1 text-sm text-white/95 active:opacity-70">
+        <span class="text-lg leading-none">‹</span><span>홈</span>
+      </a>
+      <h1 class="text-3xl font-extrabold mt-2">❤️ 마음에 담은 곳</h1>
+      <div id="overallStats" class="mt-1 text-sm text-white/90">아직 담아둔 곳이 없어요</div>
+    </div>
+  </header>
+
+  <nav class="max-w-md mx-auto px-4 -mt-3 mb-1 relative z-[1]">
+    <div class="bg-white rounded-2xl shadow flex p-1 gap-1">
+      <a href="index.html" class="flex-1 py-2 rounded-xl text-slate-600 font-medium text-sm text-center">✈️ 여행 <span id="navTripCount" class="text-slate-400"></span></a>
+      <button class="flex-1 py-2 rounded-xl bg-rose-500 text-white font-medium text-sm" aria-current="page">❤️ 즐겨찾기 <span id="navFavCount" class="opacity-80"></span></button>
+    </div>
+  </nav>
+
+  <main class="max-w-md mx-auto px-4 pt-3">
+    <div id="filterChips" class="flex gap-2 overflow-x-auto no-scrollbar -mx-4 px-4 pb-3"></div>
+
+    <div id="actionRow" class="hidden mb-3">
+      <button id="shareAllBtn" class="w-full py-2.5 rounded-xl bg-white border border-slate-200 text-slate-700 font-medium text-sm active:bg-slate-50">
+        📤 친구에게 공유하기
+      </button>
+    </div>
+
+    <div id="favoritesList" class="space-y-3"></div>
+
+    <div id="emptyAll" class="hidden text-center py-16">
+      <div class="text-6xl">💝</div>
+      <p class="mt-4 text-slate-500 font-medium">아직 담아둔 곳이 없네요</p>
+      <p class="mt-1 text-slate-400 text-sm">여행 일정의 ❤️ 버튼으로 마음에 드는 곳을 모아보세요</p>
+    </div>
+    <div id="emptyFilter" class="hidden text-center py-10">
+      <p class="text-slate-500">이 카테고리는 비어있어요</p>
+    </div>
+  </main>
+
+  <script>
+  const STORAGE_KEY = 'travel-planner-v2';
+  const CATEGORIES = [
+    { id: 'sight', label: '관광', emoji: '🏝️', chip: 'bg-sky-100 text-sky-700' },
+    { id: 'food',  label: '맛집', emoji: '🍜', chip: 'bg-orange-100 text-orange-700' },
+    { id: 'move',  label: '이동', emoji: '🚗', chip: 'bg-slate-200 text-slate-700' },
+    { id: 'stay',  label: '숙소', emoji: '🏨', chip: 'bg-purple-100 text-purple-700' },
+    { id: 'etc',   label: '기타', emoji: '✨', chip: 'bg-amber-100 text-amber-700' },
+  ];
+  const TRANSPORT_MODES = [
+    { id: 'car', emoji: '🚗', label: '자차' }, { id: 'subway', emoji: '🚇', label: '지하철' },
+    { id: 'bus', emoji: '🚌', label: '버스' }, { id: 'flight', emoji: '✈️', label: '비행기' },
+    { id: 'walk', emoji: '🚶', label: '도보' }, { id: 'taxi', emoji: '🚕', label: '택시' },
+    { id: 'ferry', emoji: '🚢', label: '배' }, { id: 'etc', emoji: '❓', label: '기타' },
+  ];
+  const COVER_THEMES = [
+    { id: 'ocean', emoji: '🏝️' }, { id: 'forest', emoji: '🏔️' }, { id: 'city', emoji: '🌆' }, { id: 'temple', emoji: '⛩️' },
+    { id: 'sunset', emoji: '🌅' }, { id: 'snow', emoji: '❄️' }, { id: 'desert', emoji: '🏜️' }, { id: 'night', emoji: '🌃' },
+  ];
+
+  const getCat = (id) => CATEGORIES.find(c => c.id === id) || CATEGORIES[4];
+  const getMode = (id) => TRANSPORT_MODES.find(m => m.id === id);
+  const getTheme = (id) => COVER_THEMES.find(t => t.id === id) || COVER_THEMES[0];
+  const escapeHtml = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const itemCost = (it) => Number(it.costEntry||0) + Number(it.costFood||0) + Number(it.costTransport||0) + Number(it.costEtc||0);
+
+  let toastTimer;
+  function toast(msg) {
+    let el = document.getElementById('toast');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'toast';
+      el.className = 'fixed top-24 left-1/2 -translate-x-1/2 bg-slate-900/85 text-white text-sm px-4 py-2 rounded-full shadow-lg z-50 pointer-events-none transition-opacity duration-300';
+      document.body.appendChild(el);
+    }
+    el.textContent = msg;
+    el.style.opacity = '1';
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => { el.style.opacity = '0'; }, 1500);
+  }
+
+  function loadState() {
+    try { const v2 = localStorage.getItem(STORAGE_KEY); if (v2) return JSON.parse(v2); } catch {}
+    return { trips: [] };
+  }
+  const save = () => localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+
+  let state = loadState();
+  let selectedCategory = 'all';
+
+  function gatherFavorites() {
+    const result = [];
+    state.trips.forEach(trip => {
+      (trip.days || []).forEach(day => {
+        (day.items || []).forEach(item => {
+          if (item.favorite) result.push({ item, trip, day });
+        });
+      });
+    });
+    result.sort((a, b) => (b.item.favoritedAt || 0) - (a.item.favoritedAt || 0));
+    return result;
+  }
+
+  function render() {
+    const allFavs = gatherFavorites();
+
+    // overall + nav counts
+    document.getElementById('overallStats').textContent = `마음에 담아둔 곳 ${allFavs.length}개`;
+    document.getElementById('navTripCount').textContent = state.trips.length || '';
+    document.getElementById('navFavCount').textContent = allFavs.length || '';
+
+    // counts per category for chips
+    const counts = { all: allFavs.length, pet: 0 };
+    CATEGORIES.forEach(c => counts[c.id] = 0);
+    allFavs.forEach(f => {
+      counts[f.item.category] = (counts[f.item.category] || 0) + 1;
+      if (f.item.petFriendly) counts.pet += 1;
+    });
+
+    // chips: 전체 + categories that have at least one fav + 🐾 if any
+    const chips = document.getElementById('filterChips');
+    chips.innerHTML = '';
+    if (allFavs.length > 0) {
+      chips.appendChild(makeChip('all', '전체', counts.all));
+      CATEGORIES.forEach(c => {
+        if (counts[c.id] > 0) chips.appendChild(makeChip(c.id, `${c.emoji} ${c.label}`, counts[c.id]));
+      });
+      if (counts.pet > 0) chips.appendChild(makeChip('pet', '🐾 반려가능', counts.pet));
+    }
+
+    // filtered list
+    let filtered;
+    if (selectedCategory === 'all') filtered = allFavs;
+    else if (selectedCategory === 'pet') filtered = allFavs.filter(f => f.item.petFriendly);
+    else filtered = allFavs.filter(f => f.item.category === selectedCategory);
+
+    const list = document.getElementById('favoritesList');
+    list.innerHTML = '';
+    filtered.forEach(f => list.appendChild(renderFav(f)));
+
+    document.getElementById('emptyAll').classList.toggle('hidden', allFavs.length !== 0);
+    document.getElementById('emptyFilter').classList.toggle('hidden', !(allFavs.length > 0 && filtered.length === 0));
+    document.getElementById('actionRow').classList.toggle('hidden', filtered.length === 0);
+
+    document.getElementById('shareAllBtn').onclick = () => {
+      let label = '내 즐겨찾기';
+      if (selectedCategory === 'pet') label = '내 반려동물 동반 가능 리스트';
+      else if (selectedCategory !== 'all') label = `내 ${getCat(selectedCategory).label} 리스트`;
+      shareFavs(filtered, label);
+    };
+  }
+
+  function makeChip(value, label, count) {
+    const b = document.createElement('button');
+    const active = value === selectedCategory;
+    const baseColor = value === 'pet'
+      ? (active ? 'bg-emerald-500 text-white shadow' : 'bg-white text-emerald-700 border border-emerald-200')
+      : (active ? 'bg-rose-500 text-white shadow' : 'bg-white text-slate-600 border border-slate-200');
+    b.className = `px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap ${baseColor}`;
+    b.innerHTML = `${escapeHtml(label)} <span class="${active ? 'text-white/80' : (value === 'pet' ? 'text-emerald-400' : 'text-slate-400')}">${count}</span>`;
+    b.onclick = () => { selectedCategory = value; render(); };
+    return b;
+  }
+
+  function renderFav(f) {
+    const { item, trip, day } = f;
+    const cat = getCat(item.category);
+    const mode = item.transportMode ? getMode(item.transportMode) : null;
+    const theme = getTheme(trip.cover?.theme);
+    const cost = itemCost(item);
+    const loc = item.location;
+    const card = document.createElement('div');
+    card.className = 'bg-white rounded-2xl shadow-sm overflow-hidden';
+    card.innerHTML = `
+      <div class="p-4">
+        <div class="flex items-start justify-between gap-2">
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-1.5 flex-wrap">
+              <span class="text-[11px] px-2 py-0.5 rounded-full ${cat.chip} font-medium">${cat.emoji} ${cat.label}</span>
+              ${item.petFriendly ? `<span class="text-[11px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 font-medium">🐾</span>` : ''}
+            </div>
+            <h3 class="mt-1.5 font-bold text-slate-800 text-base break-words">${escapeHtml(item.title)}</h3>
+            ${item.desc ? `<p class="text-xs text-slate-500 mt-1 break-words">${escapeHtml(item.desc)}</p>` : ''}
+            ${loc?.address ? `<p class="text-xs text-slate-600 mt-2 break-words">📍 ${escapeHtml(loc.address)}</p>` : ''}
+            ${(mode || item.transportDetail) ? `
+              <p class="text-xs text-slate-500 mt-1 flex items-center gap-1.5 flex-wrap">
+                ${mode ? `<span>${mode.emoji} ${mode.label}</span>` : ''}
+                ${item.transportDetail ? `<span class="text-slate-400">${escapeHtml(item.transportDetail)}</span>` : ''}
+              </p>` : ''}
+            ${cost ? `<p class="text-xs font-medium text-slate-700 mt-1">₩${cost.toLocaleString()}</p>` : ''}
+            <p class="text-[11px] text-slate-400 mt-2">${theme.emoji} ${escapeHtml(trip.title)} · ${escapeHtml(day.label)}${day.date ? ' (' + escapeHtml(day.date) + ')' : ''}</p>
+          </div>
+          <button class="unfav-btn shrink-0 w-9 h-9 flex items-center justify-center rounded-full active:bg-slate-100" title="즐겨찾기 해제">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="#ef4444" stroke="#ef4444" stroke-width="2" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+          </button>
+        </div>
+        <div class="mt-3 grid ${loc?.lat ? 'grid-cols-2' : 'grid-cols-1'} gap-2">
+          <button class="share-btn py-2 rounded-xl bg-slate-100 text-slate-700 text-sm font-medium active:bg-slate-200">📤 공유하기</button>
+          ${loc?.lat ? `<a href="https://www.google.com/maps/search/?api=1&query=${loc.lat},${loc.lng}" target="_blank" rel="noopener" class="py-2 rounded-xl bg-slate-100 text-slate-700 text-sm font-medium text-center active:bg-slate-200">🗺 지도 보기</a>` : ''}
+        </div>
+      </div>
+    `;
+    card.querySelector('.unfav-btn').onclick = () => {
+      if (!confirm(`'${item.title}'을(를) 마음에서 뺄까요?`)) return;
+      item.favorite = false; item.favoritedAt = null;
+      save(); render();
+      toast('마음에서 뺐어요');
+    };
+    card.querySelector('.share-btn').onclick = () => shareFavs([f], item.title);
+    return card;
+  }
+
+  function formatFav(f) {
+    const { item, trip, day } = f;
+    const cat = getCat(item.category);
+    const lines = [`${cat.emoji} ${item.title}`];
+    if (item.location?.address) lines.push(`📍 ${item.location.address}`);
+    if (item.location?.lat && item.location?.lng) lines.push(`🗺 https://www.google.com/maps/search/?api=1&query=${item.location.lat},${item.location.lng}`);
+    if (item.desc) lines.push(`💬 ${item.desc}`);
+    const mode = item.transportMode ? getMode(item.transportMode) : null;
+    if (mode) lines.push(`${mode.emoji} ${mode.label}${item.transportDetail ? ' · ' + item.transportDetail : ''}`);
+    if (item.petFriendly) lines.push(`🐾 반려동물과 함께 갈 수 있어요`);
+    const c = itemCost(item);
+    if (c) lines.push(`💰 ₩${c.toLocaleString()}`);
+    lines.push(`✈️ ${trip.title} / ${day.label}`);
+    return lines.join('\n');
+  }
+
+  async function shareFavs(favs, label) {
+    if (!favs.length) return;
+    const body = favs.map((f, i) => `${i+1}. ${formatFav(f)}`).join('\n\n');
+    const text = `${label} ❤️\n\n${body}\n\n— Travel Planner`;
+    if (navigator.share) {
+      try { await navigator.share({ title: label, text }); return; } catch (e) { if (e.name === 'AbortError') return; }
+    }
+    try { await navigator.clipboard.writeText(text); toast('📋 복사했어요! 친구에게 보내보세요'); }
+    catch { prompt('아래 내용을 복사해서 공유해보세요', text); }
+  }
+
+  render();
+  </script>
+</body>
+</html>

@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#10b981" />
+  <title>정산</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    html, body { font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Pretendard", system-ui, sans-serif; -webkit-tap-highlight-color: transparent; }
+    input[type=number]::-webkit-outer-spin-button,
+    input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+    input[type=number] { -moz-appearance: textfield; }
+  </style>
+</head>
+<body class="bg-slate-100 min-h-screen pb-12">
+
+  <header class="bg-gradient-to-br from-emerald-500 via-emerald-400 to-green-400 text-white px-5 pt-12 pb-5 shadow-lg">
+    <div class="max-w-md mx-auto">
+      <a id="backLink" href="#" class="inline-flex items-center gap-1 text-sm text-white/95 active:opacity-70">
+        <span class="text-lg leading-none">‹</span><span id="backLabel">여행</span>
+      </a>
+      <h1 class="text-3xl font-extrabold mt-2">💰 같이 정산해요</h1>
+      <div id="tripSubtitle" class="mt-1 text-sm text-white/90"></div>
+    </div>
+  </header>
+
+  <main class="max-w-md mx-auto px-4 pt-4 space-y-3">
+    <div class="bg-white rounded-2xl shadow-sm p-5 text-center">
+      <div class="text-xs text-slate-500">여행 총 지출</div>
+      <div class="text-3xl font-extrabold mt-1 text-slate-800 tabular-nums" id="totalSpend">₩0</div>
+    </div>
+
+    <div class="bg-white rounded-2xl shadow-sm p-5">
+      <div class="text-xs text-slate-500 font-medium">몇 명이 함께 나눠 낼까요? (본인 포함)</div>
+      <div class="mt-2 flex items-center gap-2">
+        <button id="dec" type="button" class="w-12 h-12 rounded-xl bg-slate-100 text-2xl font-bold text-slate-600 active:bg-slate-200 shrink-0">−</button>
+        <input id="count" type="number" inputmode="numeric" min="1" class="flex-1 min-w-0 px-4 py-3 bg-slate-100 rounded-xl text-center text-2xl font-bold focus:outline-none focus:ring-2 focus:ring-emerald-400" />
+        <button id="inc" type="button" class="w-12 h-12 rounded-xl bg-slate-100 text-2xl font-bold text-slate-600 active:bg-slate-200 shrink-0">+</button>
+      </div>
+    </div>
+
+    <div class="bg-gradient-to-br from-emerald-500 to-green-400 text-white rounded-2xl shadow-lg p-6 text-center">
+      <div class="text-sm text-white/90 font-medium">💵 한 사람당 부담 금액</div>
+      <div class="text-4xl font-extrabold mt-2 tabular-nums" id="perPerson">₩0</div>
+      <div class="text-xs text-white/80 mt-2" id="perPersonNote"></div>
+    </div>
+
+    <div class="bg-white rounded-2xl shadow-sm p-5">
+      <div class="text-xs text-slate-500 font-medium mb-2">카테고리별 한 사람 부담</div>
+      <div id="breakdown" class="divide-y divide-slate-100"></div>
+    </div>
+
+    <a id="backBottom" href="#" class="block py-3 rounded-2xl bg-white border border-slate-200 text-slate-700 text-center font-medium active:bg-slate-50">← 여행으로 돌아가요</a>
+  </main>
+
+  <script>
+    const STORAGE_KEY = 'travel-planner-v2';
+    const COST_BUCKETS = [
+      { id: 'Entry',     emoji: '🎫', label: '입장료' },
+      { id: 'Food',      emoji: '🍽', label: '음식값' },
+      { id: 'Transport', emoji: '🚗', label: '교통비' },
+      { id: 'Etc',       emoji: '✨', label: '기타' },
+    ];
+
+    function loadState() {
+      try { const v2 = localStorage.getItem(STORAGE_KEY); if (v2) return JSON.parse(v2); } catch {}
+      return { trips: [] };
+    }
+    const save = () => localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+
+    const params = new URLSearchParams(location.search);
+    const tripId = params.get('id');
+    let state = loadState();
+    let trip = state.trips.find(t => t.id === tripId);
+    if (!trip) { location.replace('index.html'); throw new Error('no trip'); }
+
+    document.getElementById('backLabel').textContent = trip.title || '여행';
+    document.getElementById('backLink').href = `trip.html?id=${trip.id}`;
+    document.getElementById('backBottom').href = `trip.html?id=${trip.id}`;
+    document.getElementById('tripSubtitle').textContent = trip.dates || '';
+
+    function getBuckets() {
+      const b = { Entry: 0, Food: 0, Transport: 0, Etc: 0 };
+      (trip.days || []).forEach(d => (d.items || []).forEach(it => {
+        b.Entry     += Number(it.costEntry||0);
+        b.Food      += Number(it.costFood||0);
+        b.Transport += Number(it.costTransport||0);
+        b.Etc       += Number(it.costEtc||0);
+      }));
+      return b;
+    }
+
+    function render() {
+      const buckets = getBuckets();
+      const total = buckets.Entry + buckets.Food + buckets.Transport + buckets.Etc;
+      const count = Math.max(1, Number(trip.companion?.count) || 1);
+
+      document.getElementById('totalSpend').textContent = '₩' + total.toLocaleString();
+      document.getElementById('count').value = count;
+
+      const per = Math.round(total / count);
+      document.getElementById('perPerson').textContent = '₩' + per.toLocaleString();
+      document.getElementById('perPersonNote').textContent = count > 1
+        ? `${count}명이 똑같이 나눠 내요`
+        : '혼자서 다 냈어요';
+
+      const bk = document.getElementById('breakdown');
+      bk.innerHTML = '';
+      COST_BUCKETS.forEach(b => {
+        const amount = buckets[b.id];
+        const perAmount = Math.round(amount / count);
+        const row = document.createElement('div');
+        row.className = 'flex items-center justify-between py-2.5';
+        row.innerHTML = `
+          <span class="text-sm text-slate-700">${b.emoji} ${b.label}</span>
+          <div class="text-right">
+            <div class="font-bold text-slate-800 tabular-nums">₩${perAmount.toLocaleString()}</div>
+            <div class="text-[11px] text-slate-400 tabular-nums">총 ₩${amount.toLocaleString()}</div>
+          </div>
+        `;
+        bk.appendChild(row);
+      });
+    }
+
+    function setCount(n) {
+      const c = Math.max(1, Math.min(99, n));
+      trip.companion = { type: trip.companion?.type || '', count: c };
+      save(); render();
+    }
+
+    document.getElementById('count').addEventListener('input', (e) => {
+      const v = Number(e.target.value);
+      if (Number.isFinite(v) && v >= 1) setCount(v);
+    });
+    document.getElementById('dec').onclick = () => setCount((Number(document.getElementById('count').value) || 1) - 1);
+    document.getElementById('inc').onclick = () => setCount((Number(document.getElementById('count').value) || 1) + 1);
+
+    render();
+  </script>
+</body>
+</html>
