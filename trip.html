@@ -313,6 +313,7 @@
   <script>
   // ---------------- Constants ----------------
   const STORAGE_KEY = 'travel-planner-v2';
+  const KAKAO_KEY = '67ffada9e1a81996c8ee4e03aaa01ba3';
   const CATEGORIES = [
     { id: 'sight', label: '관광', emoji: '🏝️', chip: 'bg-sky-100 text-sky-700' },
     { id: 'food',  label: '맛집', emoji: '🍜', chip: 'bg-orange-100 text-orange-700' },
@@ -1380,10 +1381,15 @@
     if (reverseGeocode) {
       document.getElementById('mapAddress').textContent = '주소 가져오는 중...';
       document.getElementById('mapConfirmBtn').disabled = false;
-      fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&accept-language=ko`)
-        .then(r => r.json())
+      fetch(`https://dapi.kakao.com/v2/local/geo/coord2address.json?x=${lng}&y=${lat}`, {
+        headers: { 'Authorization': `KakaoAK ${KAKAO_KEY}` }
+      })
+        .then(r => r.ok ? r.json() : Promise.reject(r.status))
         .then(d => {
-          const address = d.display_name || `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+          const doc = d.documents?.[0];
+          const address = doc?.road_address?.address_name
+            || doc?.address?.address_name
+            || `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
           pendingLocation.address = address;
           document.getElementById('mapAddress').textContent = '📍 ' + address;
         })
@@ -1401,32 +1407,40 @@
     list.innerHTML = '<div class="px-3 py-2 text-sm text-slate-400">찾아보는 중...</div>';
     list.classList.remove('hidden');
     try {
-      const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&accept-language=ko&limit=8`;
-      const r = await fetch(url);
+      const url = `https://dapi.kakao.com/v2/local/search/keyword.json?query=${encodeURIComponent(q)}&size=15`;
+      const r = await fetch(url, {
+        headers: { 'Authorization': `KakaoAK ${KAKAO_KEY}` }
+      });
+      if (!r.ok) throw new Error('kakao search failed: ' + r.status);
       const data = await r.json();
-      if (!data.length) {
+      const docs = data.documents || [];
+      if (!docs.length) {
         list.innerHTML = '<div class="px-3 py-2 text-sm text-slate-400">찾는 곳이 없네요. 다른 이름으로 검색해보세요</div>';
         return;
       }
       list.innerHTML = '';
-      data.forEach(d => {
+      docs.forEach(d => {
         const row = document.createElement('button');
         row.type = 'button';
         row.className = 'block w-full text-left px-3 py-2 text-sm hover:bg-slate-50 active:bg-slate-100 border-b border-slate-100';
-        row.innerHTML = `<div class="font-medium text-slate-800 truncate">${escapeHtml((d.display_name||'').split(',')[0])}</div>
-                         <div class="text-xs text-slate-400 truncate">${escapeHtml(d.display_name || '')}</div>`;
+        const addr = d.road_address_name || d.address_name || '';
+        const cat = d.category_name ? d.category_name.split('>').pop().trim() : '';
+        row.innerHTML = `<div class="font-medium text-slate-800 truncate">${escapeHtml(d.place_name)}</div>
+                         <div class="text-xs text-slate-400 truncate">${escapeHtml(addr)}${cat ? ` · ${escapeHtml(cat)}` : ''}</div>`;
         row.onclick = () => {
-          const lat = Number(d.lat), lng = Number(d.lon);
-          map.setView([lat, lng], 15);
+          const lat = Number(d.y), lng = Number(d.x);
+          const finalAddr = addr || d.place_name;
+          map.setView([lat, lng], 16);
           placePin(lat, lng, false);
-          pendingLocation = { lat, lng, address: d.display_name };
-          document.getElementById('mapAddress').textContent = '📍 ' + d.display_name;
+          pendingLocation = { lat, lng, address: finalAddr };
+          document.getElementById('mapAddress').textContent = '📍 ' + finalAddr;
           document.getElementById('mapConfirmBtn').disabled = false;
           list.classList.add('hidden');
         };
         list.appendChild(row);
       });
     } catch (err) {
+      console.error(err);
       list.innerHTML = '<div class="px-3 py-2 text-sm text-red-500">검색이 잘 안되네요. 잠시 후 다시 해볼게요</div>';
     }
   }
