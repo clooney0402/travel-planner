@@ -587,6 +587,7 @@
       companion: data.companion || { type: '', count: 1 },
       region: data.region || null,
       withPet: !!data.withPet,
+      stay: data.stay || null,
       days: (data.days || []).map(d => ({
         id: uid(),
         label: d.label || '',
