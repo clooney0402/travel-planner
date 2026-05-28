@@ -1014,18 +1014,36 @@
     return ordered;
   }
 
-  function buildStayItem(time) {
+  function buildStayItem(time, desc) {
     return {
       id: uid(),
       category: 'stay',
       title: trip.stay?.name || '숙소',
       time: time || '09:00',
-      desc: '여기서 출발해요',
+      desc: desc || '여기서 출발해요',
       transportMode: '', transportDetail: '',
       location: trip.stay?.location ? { ...trip.stay.location } : null,
       costEntry: 0, costFood: 0, costTransport: 0, costEtc: 0,
       favorite: false, favoritedAt: null, petFriendly: false,
     };
+  }
+  // 일정이 있는 Day의 마지막에 숙소 복귀 항목 추가 (마지막 일정 +90분, 23:30 한도, 중복 방지)
+  function appendReturnStay(day) {
+    const stayLoc = trip.stay?.location;
+    if (!stayLoc?.lat) return;
+    let lastMin = null, hasSpot = false, hasReturn = false;
+    day.items.forEach(it => {
+      if (it.category === 'stay') {
+        if (it.desc === '숙소로 돌아와요' && it.location?.lat === stayLoc.lat) hasReturn = true;
+        return;
+      }
+      hasSpot = true;
+      const m = toMin(it.time);
+      if (m != null && (lastMin == null || m > lastMin)) lastMin = m;
+    });
+    if (!hasSpot || hasReturn) return;
+    const t = lastMin != null ? toHM(Math.min(23 * 60 + 30, lastMin + 90)) : '21:00';
+    day.items.push(buildStayItem(t, '숙소로 돌아와요'));
   }
   function buildSpotItem(r, time) {
     return {
@@ -1055,6 +1073,7 @@
       const daySpots = ordered.slice(dayIdx * perDay, (dayIdx + 1) * perDay);
       const route = stayLoc ? orderByNearest(stayLoc, daySpots) : daySpots;
       route.forEach((r, slot) => day.items.push(buildSpotItem(r, SLOT_TIMES[slot] || '')));
+      if (stayLoc) appendReturnStay(day);
     });
     trip.days.forEach(sortDayByTime);
     return recos.length;
@@ -1078,12 +1097,13 @@
     const perDay = Math.max(1, Math.ceil(ordered.length / D));
     let added = 0;
     trip.days.forEach((day, dayIdx) => {
-      const hasStay = day.items.some(it =>
-        it.category === 'stay' &&
+      const hasStart = day.items.some(it =>
+        it.category === 'stay' && it.desc === '여기서 출발해요' &&
         it.location?.lat === stayLoc.lat && it.location?.lng === stayLoc.lng);
-      if (!hasStay) day.items.push(buildStayItem('09:00'));
+      if (!hasStart) day.items.push(buildStayItem('09:00'));
       const daySpots = orderByNearest(stayLoc, ordered.slice(dayIdx * perDay, (dayIdx + 1) * perDay));
       daySpots.forEach((r, slot) => { day.items.push(buildSpotItem(r, SLOT_TIMES[slot] || '')); added++; });
+      appendReturnStay(day);
     });
     trip.days.forEach(sortDayByTime);
     save(); render();
