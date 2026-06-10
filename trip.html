@@ -176,6 +176,14 @@
       </div>
 
       <div>
+        <label class="text-xs text-slate-500 font-medium">🐾 반려동물</label>
+        <button id="f_petBtn" type="button" class="mt-2 w-full py-3 rounded-xl flex items-center justify-center gap-2 font-medium text-sm bg-[#FAF5E8] border border-[#D6C9A5] text-[#7D6F4F] active:bg-[#E5D8B5]">
+          <span class="text-lg">🐾</span>
+          <span id="f_petLabel">반려동물과 함께해요</span>
+        </button>
+      </div>
+
+      <div>
         <label class="text-xs text-slate-500 font-medium">어떻게 이동해요?</label>
         <div id="transportPicker" class="mt-2 grid grid-cols-4 gap-2"></div>
         <input id="f_transportDetail" type="text" placeholder="예: 30분 / 환승 1회" class="mt-2 w-full px-4 py-3 bg-[#FAF5E8] border border-[#D6C9A5] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#C97F4D] focus:border-transparent" />
@@ -211,13 +219,6 @@
           <input type="file" id="f_receiptInput" accept="image/*" multiple class="hidden" />
           <span class="block w-full py-2.5 rounded-xl bg-[#FAF5E8] border border-[#D6C9A5] text-[#5D4E2F] text-sm font-medium text-center cursor-pointer active:bg-[#E5D8B5]">📸 영수증 찍거나 사진 고르기</span>
         </label>
-      </div>
-
-      <div>
-        <button id="f_petBtn" type="button" class="w-full py-3 rounded-xl flex items-center justify-center gap-2 font-medium text-sm bg-[#FAF5E8] border border-[#D6C9A5] text-[#7D6F4F] active:bg-[#E5D8B5]">
-          <span class="text-lg">🐾</span>
-          <span id="f_petLabel">반려동물과 함께 갈 수 있어요 (탭해서 켜기)</span>
-        </button>
       </div>
 
       <div class="flex gap-2 pt-2 pb-2">
@@ -1090,11 +1091,11 @@
     const btn = document.getElementById('f_petBtn');
     const label = document.getElementById('f_petLabel');
     if (tempPetFriendly) {
-      btn.className = 'w-full py-3 rounded-xl flex items-center justify-center gap-2 font-medium text-sm bg-emerald-100 text-emerald-700 ring-2 ring-emerald-300 active:bg-emerald-200';
-      label.textContent = '반려동물과 함께 갈 수 있어요';
+      btn.className = 'mt-2 w-full py-3 rounded-xl flex items-center justify-center gap-2 font-medium text-sm bg-emerald-100 text-emerald-700 ring-2 ring-emerald-300 active:bg-emerald-200';
+      label.textContent = '반려동물과 함께해요';
     } else {
-      btn.className = 'w-full py-3 rounded-xl flex items-center justify-center gap-2 font-medium text-sm bg-[#FAF5E8] border border-[#D6C9A5] text-[#7D6F4F] active:bg-[#E5D8B5]';
-      label.textContent = '반려동물과 함께 갈 수 있어요 (탭해서 켜기)';
+      btn.className = 'mt-2 w-full py-3 rounded-xl flex items-center justify-center gap-2 font-medium text-sm bg-[#FAF5E8] border border-[#D6C9A5] text-[#7D6F4F] active:bg-[#E5D8B5]';
+      label.textContent = '반려동물과 함께해요';
     }
   }
 
