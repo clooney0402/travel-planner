@@ -114,7 +114,13 @@
       });
     });
 
+    // Deep-link: trip.html의 미니 지도에서 #day=N 으로 들어오면 해당 Day 선택
     let selectedDay = 'all';
+    const hashMatch = location.hash.match(/day=(\d+)/);
+    if (hashMatch) {
+      const di = Number(hashMatch[1]);
+      if (Number.isFinite(di) && points.some(p => p.dayIdx === di)) selectedDay = String(di);
+    }
     let map, markers = [], polylines = [];
 
     function haversine(a, b) {

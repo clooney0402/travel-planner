@@ -89,12 +89,28 @@
   <main class="max-w-md mx-auto px-4 py-4">
     <div class="mb-4">
       <button id="addItemBtn" class="w-full py-3.5 rounded-2xl bg-[#2D1F0F] text-white font-bold active:bg-[#1A0F08] shadow-md">+ 일정 추가하기</button>
-      <a id="routeLink" href="#" class="hidden mt-2 w-full block py-2.5 rounded-2xl bg-white border border-slate-200 text-slate-700 font-medium text-sm text-center active:bg-slate-50">🗺 동선 한눈에 보기</a>
     </div>
     <div id="recoSection" class="hidden mb-4">
       <div id="recoTitle" class="text-xs text-slate-500 font-medium mb-2 px-1">✨ 가볼만한 곳</div>
       <div id="recoList" class="flex gap-2 overflow-x-auto pb-1 no-scrollbar -mx-4 px-4"></div>
     </div>
+
+    <!-- Sticky Day별 동선 미리보기 -->
+    <div id="routePanel" class="sticky top-0 z-20 -mx-4 px-4 pt-3 pb-3 mb-3 bg-[#F0E7D2]/95 backdrop-blur border-b border-[#D6C9A5]">
+      <div class="flex items-center justify-between mb-2">
+        <div class="text-xs font-semibold text-[#5D4E2F]">🗺 Day별 동선</div>
+        <a id="routePanelExpand" href="#" class="text-[11px] text-[#A05D30] font-medium active:opacity-60">전체 동선 보기 →</a>
+      </div>
+      <div id="routeDayTabs" class="flex gap-1.5 overflow-x-auto no-scrollbar pb-1.5"></div>
+      <div class="bg-white rounded-2xl overflow-hidden shadow-sm">
+        <div class="relative">
+          <div id="miniMap" class="w-full h-32 bg-slate-100"></div>
+          <div id="miniMapEmpty" class="hidden absolute inset-0 flex items-center justify-center text-[12px] text-slate-500 text-center px-4 pointer-events-none bg-slate-50">📍 일정에 위치를 추가하면 동선이 보여요</div>
+        </div>
+        <div id="routePanelInfo" class="px-3 py-1.5 text-[11px] text-slate-500 leading-tight flex items-center justify-between gap-2"></div>
+      </div>
+    </div>
+
     <div id="daysContainer" class="space-y-4"></div>
     <div id="emptyTrip" class="hidden text-center py-12">
       <div class="text-5xl">📋</div>
@@ -687,6 +703,113 @@
   }
 
   // ---------------- Render ----------------
+  // ---------------- Mini route preview ----------------
+  let miniMap = null, miniMarkers = [], miniPolyline = null;
+  let currentRouteDayId = null;
+
+  function ensureMiniMap() {
+    if (miniMap) return;
+    miniMap = L.map('miniMap', {
+      zoomControl: false, attributionControl: false,
+      dragging: false, scrollWheelZoom: false, doubleClickZoom: false,
+      touchZoom: false, boxZoom: false, keyboard: false, tap: false,
+    });
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(miniMap);
+    document.getElementById('miniMap').addEventListener('click', () => {
+      const dayIdx = trip.days.findIndex(d => d.id === currentRouteDayId);
+      const hash = dayIdx >= 0 ? `#day=${dayIdx}` : '';
+      location.href = `route.html?id=${trip.id}${hash}`;
+    });
+  }
+
+  function renderRoutePanel() {
+    // Pick a sensible current day
+    if (!currentRouteDayId || !trip.days.find(d => d.id === currentRouteDayId)) {
+      currentRouteDayId = trip.days[0]?.id || null;
+    }
+    // Tabs
+    const tabsEl = document.getElementById('routeDayTabs');
+    tabsEl.innerHTML = '';
+    if (!trip.days.length) {
+      tabsEl.innerHTML = '<span class="text-[11px] text-slate-400 px-1">Day를 추가해보세요</span>';
+    }
+    trip.days.forEach(d => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      const active = d.id === currentRouteDayId;
+      const cnt = d.items.filter(it => it.location?.lat).length;
+      b.className = `shrink-0 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap ${active ? 'bg-[#A05D30] text-white shadow' : 'bg-white border border-[#D6C9A5] text-[#5D4E2F] active:bg-[#FAF5E8]'}`;
+      b.innerHTML = `${escapeHtml(d.label)} <span class="${active?'text-white/75':'text-slate-400'}">· ${cnt}</span>`;
+      b.onclick = () => {
+        currentRouteDayId = d.id;
+        renderRoutePanel();
+        // 페이지를 해당 Day 섹션으로 부드럽게 스크롤
+        const sec = document.querySelector(`section[data-day-id="${d.id}"]`);
+        if (sec) sec.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      };
+      tabsEl.appendChild(b);
+    });
+    // Expand link
+    document.getElementById('routePanelExpand').href = `route.html?id=${trip.id}`;
+    renderMiniRoute();
+  }
+
+  function renderMiniRoute() {
+    ensureMiniMap();
+    miniMarkers.forEach(m => miniMap.removeLayer(m));
+    miniMarkers = [];
+    if (miniPolyline) { miniMap.removeLayer(miniPolyline); miniPolyline = null; }
+
+    const day = trip.days.find(d => d.id === currentRouteDayId);
+    const emptyEl = document.getElementById('miniMapEmpty');
+    const infoEl = document.getElementById('routePanelInfo');
+
+    if (!day) {
+      emptyEl.classList.remove('hidden');
+      infoEl.innerHTML = '<span>일정을 만들어보세요</span><span></span>';
+      miniMap.setView([36.5, 127.8], 5);
+      setTimeout(() => miniMap.invalidateSize(), 50);
+      return;
+    }
+
+    const located = day.items.filter(it => it.location?.lat);
+    if (!located.length) {
+      emptyEl.classList.remove('hidden');
+      infoEl.innerHTML = `<span>${escapeHtml(day.label)} · 위치 없음</span><span class="text-[#A05D30] font-medium">+ 위치 추가</span>`;
+      miniMap.setView([36.5, 127.8], 5);
+      setTimeout(() => miniMap.invalidateSize(), 50);
+      return;
+    }
+
+    emptyEl.classList.add('hidden');
+    const latlngs = located.map(it => [it.location.lat, it.location.lng]);
+
+    located.forEach((it, i) => {
+      const isStay = it.category === 'stay';
+      const html = `<div style="background:${isStay?'#9F6748':'#A05D30'};color:#fff;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:bold;box-shadow:0 1px 3px rgba(0,0,0,.35);border:2px solid #fff;">${isStay?'🏨':i+1}</div>`;
+      const icon = L.divIcon({ className: '', html, iconSize: [22,22], iconAnchor: [11,11] });
+      miniMarkers.push(L.marker(latlngs[i], { icon }).addTo(miniMap));
+    });
+    if (latlngs.length > 1) {
+      miniPolyline = L.polyline(latlngs, { color: '#A05D30', weight: 3, opacity: 0.85 }).addTo(miniMap);
+    }
+
+    // Distance (km)
+    let totalKm = 0;
+    for (let i = 1; i < located.length; i++) {
+      totalKm += haversine(located[i-1].location, located[i].location);
+    }
+    const distLabel = totalKm < 10 ? totalKm.toFixed(1) : Math.round(totalKm);
+    infoEl.innerHTML =
+      `<span>${escapeHtml(day.label)} · ${located.length}곳 · 총 ${distLabel}km</span>` +
+      `<span class="text-[#A05D30] font-medium">탭하면 전체보기</span>`;
+
+    setTimeout(() => {
+      miniMap.invalidateSize();
+      miniMap.fitBounds(L.latLngBounds(latlngs), { padding: [18, 18], maxZoom: 14 });
+    }, 50);
+  }
+
   function render() {
     applyTheme();
     document.getElementById('tripTitle').value = trip.title || '';
@@ -727,11 +850,15 @@
             </button>
           </div>
         </header>
-        <div class="items-list p-3 space-y-2 min-h-[56px]" data-day-id="${day.id}"></div>
+        <div class="items-list flex gap-2 overflow-x-auto py-3 px-3 snap-x snap-mandatory min-h-[140px] no-scrollbar" data-day-id="${day.id}"></div>
         <button class="add-item-btn w-full py-3 border-t border-slate-100 text-sm text-[#A05D30] font-medium active:bg-[#F5EAD8]" data-day-id="${day.id}">+ 일정 추가</button>
       `;
       const itemsList = dayEl.querySelector('.items-list');
-      day.items.forEach(item => itemsList.appendChild(renderItem(item, day.id)));
+      if (!day.items.length) {
+        itemsList.innerHTML = '<div class="shrink-0 w-full text-center text-xs text-slate-400 py-10 px-4">아직 일정이 없어요. 아래 + 버튼으로 추가해보세요</div>';
+      } else {
+        day.items.forEach(item => itemsList.appendChild(renderItem(item, day.id)));
+      }
       container.appendChild(dayEl);
     });
 
@@ -760,19 +887,9 @@
     // pet chip
     document.getElementById('petBtn').classList.toggle('hidden', !trip.withPet);
 
-    // route link — only when at least one item has a location
-    const hasAnyLocation = trip.days.some(d => d.items.some(i => i.location?.lat));
-    const routeLink = document.getElementById('routeLink');
-    routeLink.classList.toggle('hidden', !hasAnyLocation);
-    routeLink.href = `route.html?id=${trip.id}`;
-
     renderRecommendations();
+    renderRoutePanel();
 
-    document.querySelectorAll('.items-list').forEach(list => {
-      Sortable.create(list, { group:'items', handle:'.drag-handle', animation:180,
-        ghostClass:'sortable-ghost', chosenClass:'sortable-chosen', dragClass:'sortable-drag',
-        onEnd: handleSortEnd });
-    });
     document.querySelectorAll('.add-item-btn').forEach(btn => { btn.onclick = () => openSheet(btn.dataset.dayId, null); });
     document.querySelectorAll('.day-del-btn').forEach(btn => {
       btn.onclick = () => {
@@ -791,47 +908,39 @@
     const mode = item.transportMode ? getMode(item.transportMode) : null;
     const cost = itemCost(item);
     const el = document.createElement('div');
-    el.className = 'flex items-stretch bg-slate-50 rounded-xl overflow-hidden';
+    el.className = 'shrink-0 w-[260px] snap-start bg-slate-50 rounded-xl overflow-hidden flex flex-col';
     el.dataset.itemId = item.id;
     el.innerHTML = `
-      <div class="drag-handle flex items-center px-1.5 text-slate-300 select-none">
-        <svg width="14" height="22" viewBox="0 0 14 22" fill="currentColor" aria-hidden="true">
-          <circle cx="4" cy="5" r="1.5"/><circle cx="10" cy="5" r="1.5"/>
-          <circle cx="4" cy="11" r="1.5"/><circle cx="10" cy="11" r="1.5"/>
-          <circle cx="4" cy="17" r="1.5"/><circle cx="10" cy="17" r="1.5"/>
-        </svg>
-      </div>
-      <button class="time-btn flex flex-col items-center justify-center min-w-[64px] px-1 py-3 border-r border-slate-200/70 active:bg-slate-100" title="시간 변경">
-        ${item.time
-          ? `<div class="text-lg font-extrabold text-[#A05D30] leading-tight tabular-nums">${escapeHtml(item.time)}</div>`
-          : `<div class="text-[11px] text-slate-400 leading-tight text-center">시간<br/>찍기</div>`}
-      </button>
-      <button class="item-tap flex-1 min-w-0 text-left px-3 py-3 active:bg-slate-100">
-        <div class="flex items-center gap-1.5 flex-wrap">
-          <span class="text-[11px] px-2 py-0.5 rounded-full ${cat.chip} font-medium leading-tight">${cat.emoji} ${cat.label}</span>
-          ${item.petFriendly ? `<span class="text-[11px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 font-medium leading-tight">🐾</span>` : ''}
+      <div class="flex items-center justify-between px-3 pt-2.5 pb-1">
+        <button class="time-btn text-left active:opacity-60" title="시간 변경">
+          ${item.time
+            ? `<span class="text-base font-extrabold text-[#A05D30] tabular-nums">${escapeHtml(item.time)}</span>`
+            : `<span class="text-[11px] text-slate-400 underline">시간 찍기</span>`}
+        </button>
+        <div class="flex items-center -mr-1">
+          <button class="fav-btn p-1 active:opacity-60" title="즐겨찾기">${heartSvg(item.favorite)}</button>
+          <button class="del-btn p-1 active:opacity-60" title="지우기">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 6h18"/>
+              <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+            </svg>
+          </button>
         </div>
-        <div class="mt-1 font-semibold text-slate-800 break-words">${escapeHtml(item.title || '(이름 없는 일정)')}</div>
-        ${item.desc ? `<div class="text-xs text-slate-500 mt-0.5 break-words">${escapeHtml(item.desc)}</div>` : ''}
-        ${item.location?.address ? `<div class="mt-1 text-xs text-slate-500 break-words"><span class="mr-1">📍</span>${escapeHtml(item.location.address)}</div>` : ''}
-        ${(mode || item.transportDetail) ? `
-          <div class="mt-1 text-xs text-slate-500 flex items-center gap-1.5 flex-wrap">
+      </div>
+      <button class="item-tap flex-1 text-left px-3 pb-3 active:bg-slate-100">
+        <div class="flex items-center gap-1 flex-wrap">
+          <span class="text-[10px] px-1.5 py-0.5 rounded-full ${cat.chip} font-medium leading-tight">${cat.emoji} ${cat.label}</span>
+          ${item.petFriendly ? `<span class="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700 font-medium leading-tight">🐾</span>` : ''}
+        </div>
+        <div class="mt-1.5 font-bold text-slate-800 text-[15px] leading-tight overflow-hidden text-ellipsis whitespace-nowrap">${escapeHtml(item.title || '(이름 없는 일정)')}</div>
+        ${item.desc ? `<div class="text-[11px] text-slate-500 mt-0.5 overflow-hidden text-ellipsis whitespace-nowrap">${escapeHtml(item.desc)}</div>` : ''}
+        ${item.location?.address ? `<div class="mt-1 text-[11px] text-slate-500 overflow-hidden text-ellipsis whitespace-nowrap"><span>📍</span> ${escapeHtml(item.location.address)}</div>` : ''}
+        ${(mode || cost || item.receipts?.length) ? `
+          <div class="mt-1 text-[11px] text-slate-500 flex items-center gap-2 flex-wrap">
             ${mode ? `<span>${mode.emoji} ${mode.label}</span>` : ''}
-            ${item.transportDetail ? `<span class="text-slate-400">${escapeHtml(item.transportDetail)}</span>` : ''}
-          </div>` : ''}
-        ${(cost || item.receipts?.length) ? `
-          <div class="mt-1.5 flex items-center gap-2 text-xs">
             ${cost ? `<span class="font-medium text-slate-700">₩${cost.toLocaleString()}</span>` : ''}
-            ${item.receipts?.length ? `<span class="text-slate-500">🧾 ${item.receipts.length}</span>` : ''}
+            ${item.receipts?.length ? `<span>🧾 ${item.receipts.length}</span>` : ''}
           </div>` : ''}
-      </button>
-      <button class="fav-btn flex items-center px-2.5 active:bg-slate-100" title="즐겨찾기">${heartSvg(item.favorite)}</button>
-      <button class="del-btn flex items-center px-2.5 active:bg-slate-100" title="지우기">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M3 6h18"/>
-          <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
-          <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-        </svg>
       </button>
     `;
     el.querySelector('.item-tap').onclick = () => openSheet(dayId, item.id);
@@ -1289,6 +1398,8 @@
       }
       sortDayByTime(targetDay);
       if (day && day !== targetDay) sortDayByTime(day);
+      // 새로/수정된 일정이 속한 Day로 상단 미니 지도 자동 전환
+      currentRouteDayId = targetDay.id;
       // Receipts are now committed — prevent closeSheet from cleaning them up
       originalReceipts = [...tempReceipts];
       save(); render(); closeSheet();
