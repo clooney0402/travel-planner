@@ -146,9 +146,8 @@
 
       <div>
         <label class="text-xs text-slate-500 font-medium">어디로 가요?</label>
-        <input id="f_title" type="text" placeholder="장소 이름 (예: 성산일출봉)" class="mt-2 w-full px-4 py-3 bg-[#FAF5E8] border border-[#D6C9A5] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#C97F4D] focus:border-transparent" />
 
-        <!-- 지도에서 찾기 (기본/추천) -->
+        <!-- 1) 지도에서 찾기 — 메인 -->
         <div id="mapModeBlock" class="mt-2">
           <div class="bg-[#FAF5E8] border border-[#D6C9A5] rounded-xl p-3">
             <div id="f_locText" class="text-sm text-slate-500">아직 위치가 없어요</div>
@@ -157,12 +156,12 @@
               <button type="button" id="clearLocBtn" class="hidden py-2 px-3 rounded-lg bg-white border border-slate-200 text-slate-500 text-sm active:bg-slate-50">지우기</button>
             </div>
           </div>
-          <button type="button" id="switchToManualBtn" class="mt-1.5 block mx-auto px-2 py-1 text-[11px] text-slate-400 underline active:text-[#A05D30]">
-            지도 없이 이름만 적을게요
-          </button>
         </div>
 
-        <!-- 직접 입력 (경고 + 다시 지도로 전환 버튼) -->
+        <!-- 2) 장소 이름 — 지도에서 자동 채워짐, 필요하면 수정 가능 -->
+        <input id="f_title" type="text" placeholder="장소 이름 (지도에서 고르면 자동으로 채워져요)" class="mt-2 w-full px-4 py-3 bg-[#FAF5E8] border border-[#D6C9A5] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#C97F4D] focus:border-transparent" />
+
+        <!-- 직접 입력 모드 — 경고 + 다시 지도로 전환 -->
         <div id="manualModeBlock" class="hidden mt-2">
           <div class="flex items-start gap-2 px-3 py-2.5 bg-amber-50 border border-amber-200 rounded-xl">
             <span class="text-base shrink-0 leading-tight">💡</span>
@@ -170,6 +169,11 @@
           </div>
           <button type="button" id="switchToMapBtn" class="mt-2 w-full py-3 rounded-xl bg-[#A05D30] text-white text-sm font-bold active:bg-[#8C4F26]">🗺 지도에서 찾기로 바꾸기 (추천)</button>
         </div>
+
+        <!-- 작은 전환 링크 — 지도 모드일 때만 -->
+        <button type="button" id="switchToManualBtn" class="mt-1.5 block mx-auto px-2 py-1 text-[11px] text-slate-400 underline active:text-[#A05D30]">
+          지도 없이 이름만 적을게요
+        </button>
       </div>
 
       <div>
@@ -1291,8 +1295,11 @@
 
   function renderInputModeToggle() {
     // 제목 입력은 양쪽 모드 공통으로 항상 노출
-    document.getElementById('mapModeBlock').classList.toggle('hidden', tempInputMode !== 'map');
-    document.getElementById('manualModeBlock').classList.toggle('hidden', tempInputMode !== 'manual');
+    const map = tempInputMode === 'map';
+    document.getElementById('mapModeBlock').classList.toggle('hidden', !map);
+    document.getElementById('manualModeBlock').classList.toggle('hidden', map);
+    // '지도 없이 이름만 적을게요' 작은 링크는 지도 모드일 때만
+    document.getElementById('switchToManualBtn').classList.toggle('hidden', !map);
   }
 
   function updateLocationUI() {
@@ -1810,11 +1817,12 @@
 
     tempLocation = { ...pendingLocation };
     updateLocationUI();
-    // Auto-fill the title from map result when empty — 검색 결과는 장소명, 핀만 찍은 경우는 주소
+    // 지도에서 고른 결과를 제목에 항상 자동 셋팅(덮어쓰기). 검색 결과는 장소명, 핀만 찍은 경우는 주소.
     const titleEl = document.getElementById('f_title');
-    if (titleEl && !titleEl.value.trim()) {
+    if (titleEl) {
       const seed = pendingLocation.placeName || pendingLocation.address || '';
-      titleEl.value = seed.split(',')[0].trim();
+      const newTitle = seed.split(',')[0].trim();
+      if (newTitle) titleEl.value = newTitle;
     }
     closeMap();
   }
@@ -1933,7 +1941,11 @@
   });
 
   document.getElementById('openMapBtn').onclick = () => openMap('item');
-  document.getElementById('clearLocBtn').onclick = () => { tempLocation = null; updateLocationUI(); };
+  document.getElementById('clearLocBtn').onclick = () => {
+    tempLocation = null;
+    document.getElementById('f_title').value = '';
+    updateLocationUI();
+  };
   document.getElementById('switchToManualBtn').onclick = () => { tempInputMode = 'manual'; renderInputModeToggle(); };
   document.getElementById('switchToMapBtn').onclick = () => { tempInputMode = 'map'; renderInputModeToggle(); };
   document.getElementById('mapBackBtn').onclick = closeMap;
