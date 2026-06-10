@@ -1697,6 +1697,63 @@
     setTimeout(() => map.invalidateSize(), 100);
   }
 
+  // ---- 지역별 검색 제공자 ----
+  // 국내: Kakao Local (한국 POI 강점)
+  // 국외: Nominatim/OSM (무료·키 없음, 글로벌 랜드마크 커버)
+  const isInternationalTrip = () => trip.region?.scope === 'international';
+
+  async function kakaoSearch(q) {
+    const url = `https://dapi.kakao.com/v2/local/search/keyword.json?query=${encodeURIComponent(q)}&size=15`;
+    const r = await fetch(url, { headers: { 'Authorization': `KakaoAK ${KAKAO_KEY}` } });
+    if (!r.ok) throw new Error('kakao search failed: ' + r.status);
+    const data = await r.json();
+    return data.documents || [];
+  }
+
+  // Nominatim 응답을 Kakao 형식(place_name/road_address_name/...)으로 정규화
+  function normalizeNominatim(item) {
+    const addr = item.address || {};
+    const placeName = item.name || (item.display_name || '').split(',')[0].trim();
+    const roadParts = [addr.road, addr.house_number].filter(Boolean).join(' ');
+    const cityParts = [addr.city || addr.town || addr.village || addr.suburb, addr.country].filter(Boolean).join(', ');
+    const roadAddress = roadParts && cityParts ? `${roadParts}, ${cityParts}` : (roadParts || cityParts);
+    const cat = [item.class, item.type].filter(Boolean).join(' > ');
+    return {
+      place_name: placeName,
+      road_address_name: roadAddress,
+      address_name: item.display_name || '',
+      category_name: cat,
+      x: Number(item.lon),
+      y: Number(item.lat),
+    };
+  }
+
+  async function nominatimSearch(q) {
+    const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&limit=10&addressdetails=1&accept-language=ko,en`;
+    const r = await fetch(url);
+    if (!r.ok) throw new Error('nominatim search failed: ' + r.status);
+    const data = await r.json();
+    return (data || []).map(normalizeNominatim);
+  }
+
+  async function kakaoReverse(lat, lng) {
+    const r = await fetch(`https://dapi.kakao.com/v2/local/geo/coord2address.json?x=${lng}&y=${lat}`, {
+      headers: { 'Authorization': `KakaoAK ${KAKAO_KEY}` }
+    });
+    if (!r.ok) throw new Error('kakao reverse: ' + r.status);
+    const d = await r.json();
+    const doc = d.documents?.[0];
+    return doc?.road_address?.address_name || doc?.address?.address_name || '';
+  }
+
+  async function nominatimReverse(lat, lng) {
+    const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&addressdetails=1&accept-language=ko,en`;
+    const r = await fetch(url);
+    if (!r.ok) throw new Error('nominatim reverse: ' + r.status);
+    const d = await r.json();
+    return d?.display_name || '';
+  }
+
   function placePin(lat, lng, reverseGeocode) {
     if (marker) marker.setLatLng([lat, lng]);
     else marker = L.marker([lat, lng]).addTo(map);
@@ -1704,17 +1761,11 @@
     if (reverseGeocode) {
       document.getElementById('mapAddress').textContent = '주소 가져오는 중...';
       document.getElementById('mapConfirmBtn').disabled = false;
-      fetch(`https://dapi.kakao.com/v2/local/geo/coord2address.json?x=${lng}&y=${lat}`, {
-        headers: { 'Authorization': `KakaoAK ${KAKAO_KEY}` }
-      })
-        .then(r => r.ok ? r.json() : Promise.reject(r.status))
-        .then(d => {
-          const doc = d.documents?.[0];
-          const address = doc?.road_address?.address_name
-            || doc?.address?.address_name
-            || `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
-          pendingLocation.address = address;
-          document.getElementById('mapAddress').textContent = '📍 ' + address;
+      const reverseFn = isInternationalTrip() ? nominatimReverse : kakaoReverse;
+      reverseFn(lat, lng)
+        .then(address => {
+          pendingLocation.address = address || `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+          document.getElementById('mapAddress').textContent = '📍 ' + pendingLocation.address;
         })
         .catch(() => {
           pendingLocation.address = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
@@ -1727,16 +1778,11 @@
     const q = document.getElementById('mapSearch').value.trim();
     if (!q) return;
     const list = document.getElementById('mapResults');
-    list.innerHTML = '<div class="px-3 py-2 text-sm text-slate-400">찾아보는 중...</div>';
+    const intl = isInternationalTrip();
+    list.innerHTML = `<div class="px-3 py-2 text-sm text-slate-400">${intl ? '🌍 해외 검색(OSM)으로 찾아보는 중...' : '🇰🇷 카카오에서 찾아보는 중...'}</div>`;
     list.classList.remove('hidden');
     try {
-      const url = `https://dapi.kakao.com/v2/local/search/keyword.json?query=${encodeURIComponent(q)}&size=15`;
-      const r = await fetch(url, {
-        headers: { 'Authorization': `KakaoAK ${KAKAO_KEY}` }
-      });
-      if (!r.ok) throw new Error('kakao search failed: ' + r.status);
-      const data = await r.json();
-      const docs = data.documents || [];
+      const docs = intl ? await nominatimSearch(q) : await kakaoSearch(q);
       if (!docs.length) {
         list.innerHTML = '<div class="px-3 py-2 text-sm text-slate-400">찾는 곳이 없네요. 다른 이름으로 검색해보세요</div>';
         return;
