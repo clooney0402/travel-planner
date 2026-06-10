@@ -147,33 +147,17 @@
       <div>
         <label class="text-xs text-slate-500 font-medium">어디로 가요?</label>
 
-        <!-- 1) 지도에서 찾기 — 메인 -->
-        <div id="mapModeBlock" class="mt-2">
-          <div class="bg-[#FAF5E8] border border-[#D6C9A5] rounded-xl p-3">
-            <div id="f_locText" class="text-sm text-slate-500">아직 위치가 없어요</div>
-            <div class="mt-2 flex gap-2">
-              <button type="button" id="openMapBtn" class="flex-1 py-3 rounded-lg bg-[#A05D30] text-white text-sm font-bold active:bg-[#8C4F26]">🗺 지도에서 찾기 <span class="text-[11px] font-normal opacity-90">· 동선에 표시</span></button>
-              <button type="button" id="clearLocBtn" class="hidden py-2 px-3 rounded-lg bg-white border border-slate-200 text-slate-500 text-sm active:bg-slate-50">지우기</button>
-            </div>
+        <!-- 지도에서 찾기 — 위치까지 잡으면 동선에 표시됨 (선택) -->
+        <div class="mt-2 bg-[#FAF5E8] border border-[#D6C9A5] rounded-xl p-3">
+          <div id="f_locText" class="text-sm text-slate-500">아직 위치가 없어요</div>
+          <div class="mt-2 flex gap-2">
+            <button type="button" id="openMapBtn" class="flex-1 py-3 rounded-lg bg-[#A05D30] text-white text-sm font-bold active:bg-[#8C4F26]">🗺 지도에서 찾기 <span class="text-[11px] font-normal opacity-90">· 동선에 표시</span></button>
+            <button type="button" id="clearLocBtn" class="hidden py-2 px-3 rounded-lg bg-white border border-slate-200 text-slate-500 text-sm active:bg-slate-50">지우기</button>
           </div>
         </div>
 
-        <!-- 2) 장소 이름 — 지도에서 자동 채워짐, 필요하면 수정 가능 -->
-        <input id="f_title" type="text" placeholder="장소 이름 (지도에서 고르면 자동으로 채워져요)" class="mt-2 w-full px-4 py-3 bg-[#FAF5E8] border border-[#D6C9A5] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#C97F4D] focus:border-transparent" />
-
-        <!-- 직접 입력 모드 — 경고 + 다시 지도로 전환 -->
-        <div id="manualModeBlock" class="hidden mt-2">
-          <div class="flex items-start gap-2 px-3 py-2.5 bg-amber-50 border border-amber-200 rounded-xl">
-            <span class="text-base shrink-0 leading-tight">💡</span>
-            <p class="text-[12px] text-amber-800 leading-snug">위 이름만 적은 일정은 위치 정보가 없어서 <b>상단 동선 지도에 표시되지 않아요</b>. 지도에서 찾기를 쓰면 동선이 자동으로 그려져요.</p>
-          </div>
-          <button type="button" id="switchToMapBtn" class="mt-2 w-full py-3 rounded-xl bg-[#A05D30] text-white text-sm font-bold active:bg-[#8C4F26]">🗺 지도에서 찾기로 바꾸기 (추천)</button>
-        </div>
-
-        <!-- 작은 전환 링크 — 지도 모드일 때만 -->
-        <button type="button" id="switchToManualBtn" class="mt-1.5 block mx-auto px-2 py-1 text-[11px] text-slate-400 underline active:text-[#A05D30]">
-          지도 없이 이름만 적을게요
-        </button>
+        <!-- 장소 이름 — 그냥 적어도 되고, 지도에서 고르면 자동으로 채워짐 -->
+        <input id="f_title" type="text" placeholder="장소 이름 (예: 도두해녀의집)" class="mt-2 w-full px-4 py-3 bg-[#FAF5E8] border border-[#D6C9A5] rounded-xl focus:outline-none focus:ring-2 focus:ring-[#C97F4D] focus:border-transparent" />
       </div>
 
       <div>
@@ -703,7 +687,7 @@
   let tempPetFriendly = false;
   let tempReceipts = [];
   let originalReceipts = [];
-  let tempInputMode = 'manual'; // 'manual' | 'map'
+  // 입력 모드 토글 폐지: 제목은 직접 타이핑, 동선 표시는 지도에서 찾기로 선택 (둘 다 가능)
   let selectedDayId = null;
   let contextDayId = null;
   const PENDING_NEW_DAY = '__new__';
@@ -1293,15 +1277,6 @@
     inputEl.value = String(Math.floor(next / 60)).padStart(2, '0') + ':' + String(next % 60).padStart(2, '0');
   }
 
-  function renderInputModeToggle() {
-    // 제목 입력은 양쪽 모드 공통으로 항상 노출
-    const map = tempInputMode === 'map';
-    document.getElementById('mapModeBlock').classList.toggle('hidden', !map);
-    document.getElementById('manualModeBlock').classList.toggle('hidden', map);
-    // '지도 없이 이름만 적을게요' 작은 링크는 지도 모드일 때만
-    document.getElementById('switchToManualBtn').classList.toggle('hidden', !map);
-  }
-
   function updateLocationUI() {
     const txt = document.getElementById('f_locText');
     const clear = document.getElementById('clearLocBtn');
@@ -1373,10 +1348,7 @@
     tempPetFriendly = !!item?.petFriendly;
     originalReceipts = [...(item?.receipts || [])];
     tempReceipts = [...originalReceipts];
-    // 신규 일정은 항상 지도 모드(추천), 기존 편집 시 위치가 있으면 지도, 없으면 직접 입력으로 복원
-    tempInputMode = item ? (item.location ? 'map' : 'manual') : 'map';
     updateLocationUI();
-    renderInputModeToggle();
     renderTransportPicker();
     renderPetToggle();
     renderReceipts();
@@ -1409,7 +1381,7 @@
         desc:              document.getElementById('f_desc').value.trim(),
         transportMode:     tempTransportMode,
         transportDetail:   document.getElementById('f_transportDetail').value.trim(),
-        location:          tempInputMode === 'map' ? tempLocation : null,
+        location:          tempLocation || null,
         costEntry:         parseCost(document.getElementById('f_costEntry').value),
         costFood:          parseCost(document.getElementById('f_costFood').value),
         costTransport:     parseCost(document.getElementById('f_costTransport').value),
@@ -1418,15 +1390,6 @@
         receipts:          [...tempReceipts],
       };
       if (!data.title) { alert('어디로 가는지 알려주세요'); return; }
-      // 지도 모드인데 위치를 안 찍었으면 동선에 안 잡힘 — 사용자에게 분명히 안내
-      if (tempInputMode === 'map' && !tempLocation) {
-        const proceed = confirm(
-          '위치를 지도에서 찍지 않았어요.\n\n' +
-          '이대로 저장하면 상단 동선 지도에 표시되지 않아요.\n' +
-          '확인 = 위치 없이 그대로 저장\n취소 = 지도에서 찾기'
-        );
-        if (!proceed) return;
-      }
 
       // Delete photos that were removed during this edit
       for (const id of originalReceipts) {
@@ -1946,8 +1909,6 @@
     document.getElementById('f_title').value = '';
     updateLocationUI();
   };
-  document.getElementById('switchToManualBtn').onclick = () => { tempInputMode = 'manual'; renderInputModeToggle(); };
-  document.getElementById('switchToMapBtn').onclick = () => { tempInputMode = 'map'; renderInputModeToggle(); };
   document.getElementById('mapBackBtn').onclick = closeMap;
   document.getElementById('mapConfirmBtn').onclick = confirmMap;
   document.getElementById('mapSearchBtn').onclick = doSearch;
