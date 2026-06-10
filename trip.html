@@ -111,7 +111,7 @@
       </div>
     </div>
 
-    <div id="daysContainer" class="space-y-4"></div>
+    <div id="daysContainer" class="relative flex items-start overflow-x-auto snap-x snap-mandatory no-scrollbar gap-3"></div>
     <div id="emptyTrip" class="hidden text-center py-12">
       <div class="text-5xl">📋</div>
       <p class="mt-3 text-slate-500 font-medium">아직 일정이 비어있어요</p>
@@ -706,6 +706,45 @@
   // ---------------- Mini route preview ----------------
   let miniMap = null, miniMarkers = [], miniPolyline = null;
   let currentRouteDayId = null;
+  let _programmaticSwipe = false; // Day 탭 클릭으로 스크롤 중일 땐 스와이프 동기화 잠시 꺼둠
+  let _swipeSyncWired = false;
+
+  function attachSwipeSync() {
+    if (_swipeSyncWired) return;
+    const container = document.getElementById('daysContainer');
+    if (!container) return;
+    let timer;
+    container.addEventListener('scroll', () => {
+      if (_programmaticSwipe) return;
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        const sl = container.scrollLeft;
+        const sections = container.querySelectorAll('section[data-day-id]');
+        let bestId = null, bestDist = Infinity;
+        sections.forEach(s => {
+          const d = Math.abs(s.offsetLeft - sl);
+          if (d < bestDist) { bestDist = d; bestId = s.dataset.dayId; }
+        });
+        if (bestId && bestId !== currentRouteDayId) {
+          currentRouteDayId = bestId;
+          renderRoutePanel();
+        }
+      }, 120);
+    }, { passive: true });
+    _swipeSyncWired = true;
+  }
+
+  // 렌더 후 daysContainer를 currentRouteDayId 위치로 즉시 정렬
+  function syncSwipePosition() {
+    const container = document.getElementById('daysContainer');
+    if (!container || !currentRouteDayId) return;
+    const sec = container.querySelector(`section[data-day-id="${currentRouteDayId}"]`);
+    if (sec && container.scrollLeft !== sec.offsetLeft) {
+      _programmaticSwipe = true;
+      container.scrollLeft = sec.offsetLeft;
+      setTimeout(() => { _programmaticSwipe = false; }, 50);
+    }
+  }
 
   function ensureMiniMap() {
     if (miniMap) return;
@@ -741,11 +780,14 @@
       b.className = `shrink-0 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap ${active ? 'bg-[#A05D30] text-white shadow' : 'bg-white border border-[#D6C9A5] text-[#5D4E2F] active:bg-[#FAF5E8]'}`;
       b.innerHTML = `${escapeHtml(d.label)} <span class="${active?'text-white/75':'text-slate-400'}">· ${cnt}</span>`;
       b.onclick = () => {
+        _programmaticSwipe = true;
         currentRouteDayId = d.id;
         renderRoutePanel();
-        // 페이지를 해당 Day 섹션으로 부드럽게 스크롤
-        const sec = document.querySelector(`section[data-day-id="${d.id}"]`);
-        if (sec) sec.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        // daysContainer를 해당 Day 페이지로 가로 스크롤
+        const container = document.getElementById('daysContainer');
+        const sec = container.querySelector(`section[data-day-id="${d.id}"]`);
+        if (sec) container.scrollTo({ left: sec.offsetLeft, behavior: 'smooth' });
+        setTimeout(() => { _programmaticSwipe = false; }, 500);
       };
       tabsEl.appendChild(b);
     });
@@ -833,7 +875,7 @@
       });
 
       const dayEl = document.createElement('section');
-      dayEl.className = 'bg-white rounded-2xl shadow-sm overflow-hidden';
+      dayEl.className = 'snap-start shrink-0 w-full bg-white rounded-2xl shadow-sm overflow-hidden';
       dayEl.dataset.dayId = day.id;
       dayEl.innerHTML = `
         <header class="flex items-center justify-between px-4 py-3 border-b border-slate-100">
@@ -850,12 +892,12 @@
             </button>
           </div>
         </header>
-        <div class="items-list flex gap-2 overflow-x-auto py-3 px-3 snap-x snap-mandatory min-h-[140px] no-scrollbar" data-day-id="${day.id}"></div>
+        <div class="items-list p-3 space-y-2 min-h-[56px]" data-day-id="${day.id}"></div>
         <button class="add-item-btn w-full py-3 border-t border-slate-100 text-sm text-[#A05D30] font-medium active:bg-[#F5EAD8]" data-day-id="${day.id}">+ 일정 추가</button>
       `;
       const itemsList = dayEl.querySelector('.items-list');
       if (!day.items.length) {
-        itemsList.innerHTML = '<div class="shrink-0 w-full text-center text-xs text-slate-400 py-10 px-4">아직 일정이 없어요. 아래 + 버튼으로 추가해보세요</div>';
+        itemsList.innerHTML = '<div class="text-center text-xs text-slate-400 py-8 px-4">아직 일정이 없어요. 아래 + 버튼으로 추가해보세요</div>';
       } else {
         day.items.forEach(item => itemsList.appendChild(renderItem(item, day.id)));
       }
@@ -889,6 +931,8 @@
 
     renderRecommendations();
     renderRoutePanel();
+    attachSwipeSync();
+    syncSwipePosition();
 
     document.querySelectorAll('.add-item-btn').forEach(btn => { btn.onclick = () => openSheet(btn.dataset.dayId, null); });
     document.querySelectorAll('.day-del-btn').forEach(btn => {
@@ -908,39 +952,40 @@
     const mode = item.transportMode ? getMode(item.transportMode) : null;
     const cost = itemCost(item);
     const el = document.createElement('div');
-    el.className = 'shrink-0 w-[260px] snap-start bg-slate-50 rounded-xl overflow-hidden flex flex-col';
+    el.className = 'flex items-stretch bg-slate-50 rounded-xl overflow-hidden';
     el.dataset.itemId = item.id;
     el.innerHTML = `
-      <div class="flex items-center justify-between px-3 pt-2.5 pb-1">
-        <button class="time-btn text-left active:opacity-60" title="시간 변경">
-          ${item.time
-            ? `<span class="text-base font-extrabold text-[#A05D30] tabular-nums">${escapeHtml(item.time)}</span>`
-            : `<span class="text-[11px] text-slate-400 underline">시간 찍기</span>`}
-        </button>
-        <div class="flex items-center -mr-1">
-          <button class="fav-btn p-1 active:opacity-60" title="즐겨찾기">${heartSvg(item.favorite)}</button>
-          <button class="del-btn p-1 active:opacity-60" title="지우기">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M3 6h18"/>
-              <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
-            </svg>
-          </button>
+      <button class="time-btn flex flex-col items-center justify-center min-w-[64px] px-1 py-3 border-r border-slate-200/70 active:bg-slate-100" title="시간 변경">
+        ${item.time
+          ? `<div class="text-lg font-extrabold text-[#A05D30] leading-tight tabular-nums">${escapeHtml(item.time)}</div>`
+          : `<div class="text-[11px] text-slate-400 leading-tight text-center">시간<br/>찍기</div>`}
+      </button>
+      <button class="item-tap flex-1 min-w-0 text-left px-3 py-3 active:bg-slate-100">
+        <div class="flex items-center gap-1.5 flex-wrap">
+          <span class="text-[11px] px-2 py-0.5 rounded-full ${cat.chip} font-medium leading-tight">${cat.emoji} ${cat.label}</span>
+          ${item.petFriendly ? `<span class="text-[11px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 font-medium leading-tight">🐾</span>` : ''}
         </div>
-      </div>
-      <button class="item-tap flex-1 text-left px-3 pb-3 active:bg-slate-100">
-        <div class="flex items-center gap-1 flex-wrap">
-          <span class="text-[10px] px-1.5 py-0.5 rounded-full ${cat.chip} font-medium leading-tight">${cat.emoji} ${cat.label}</span>
-          ${item.petFriendly ? `<span class="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700 font-medium leading-tight">🐾</span>` : ''}
-        </div>
-        <div class="mt-1.5 font-bold text-slate-800 text-[15px] leading-tight overflow-hidden text-ellipsis whitespace-nowrap">${escapeHtml(item.title || '(이름 없는 일정)')}</div>
-        ${item.desc ? `<div class="text-[11px] text-slate-500 mt-0.5 overflow-hidden text-ellipsis whitespace-nowrap">${escapeHtml(item.desc)}</div>` : ''}
-        ${item.location?.address ? `<div class="mt-1 text-[11px] text-slate-500 overflow-hidden text-ellipsis whitespace-nowrap"><span>📍</span> ${escapeHtml(item.location.address)}</div>` : ''}
-        ${(mode || cost || item.receipts?.length) ? `
-          <div class="mt-1 text-[11px] text-slate-500 flex items-center gap-2 flex-wrap">
+        <div class="mt-1 font-semibold text-slate-800 break-words">${escapeHtml(item.title || '(이름 없는 일정)')}</div>
+        ${item.desc ? `<div class="text-xs text-slate-500 mt-0.5 break-words">${escapeHtml(item.desc)}</div>` : ''}
+        ${item.location?.address ? `<div class="mt-1 text-xs text-slate-500 break-words"><span class="mr-1">📍</span>${escapeHtml(item.location.address)}</div>` : ''}
+        ${(mode || item.transportDetail) ? `
+          <div class="mt-1 text-xs text-slate-500 flex items-center gap-1.5 flex-wrap">
             ${mode ? `<span>${mode.emoji} ${mode.label}</span>` : ''}
-            ${cost ? `<span class="font-medium text-slate-700">₩${cost.toLocaleString()}</span>` : ''}
-            ${item.receipts?.length ? `<span>🧾 ${item.receipts.length}</span>` : ''}
+            ${item.transportDetail ? `<span class="text-slate-400">${escapeHtml(item.transportDetail)}</span>` : ''}
           </div>` : ''}
+        ${(cost || item.receipts?.length) ? `
+          <div class="mt-1.5 flex items-center gap-2 text-xs">
+            ${cost ? `<span class="font-medium text-slate-700">₩${cost.toLocaleString()}</span>` : ''}
+            ${item.receipts?.length ? `<span class="text-slate-500">🧾 ${item.receipts.length}</span>` : ''}
+          </div>` : ''}
+      </button>
+      <button class="fav-btn flex items-center px-2.5 active:bg-slate-100" title="즐겨찾기">${heartSvg(item.favorite)}</button>
+      <button class="del-btn flex items-center px-2.5 active:bg-slate-100" title="지우기">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 6h18"/>
+          <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+          <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+        </svg>
       </button>
     `;
     el.querySelector('.item-tap').onclick = () => openSheet(dayId, item.id);
